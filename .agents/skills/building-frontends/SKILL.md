@@ -46,9 +46,6 @@ Decide by what the code does, not its length. Split when a unit:
 - cannot be named cleanly, or a block needs a comment saying what it does (extract it);
 - is hard to test in isolation.
 
-
-
-
 ## Quality
 
 Measure before optimizing. Validate every external value. Render text as text, raw HTML only after a sanitizer. Secrets never ship in the bundle. Hiding UI by permission is cosmetic; the server is the boundary. Semantic HTML, keyboard access, accessible names, errors associated with their field, never colour alone. Detail: `references/quality.md`.
