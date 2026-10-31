@@ -1,15 +1,15 @@
 ---
 name: writing-code-comments
-description: Use when writing, editing or reviewing comments inside code, in any language - deciding whether a comment is needed, where it goes and how to word it. Covers line and block comments only. Doc comments (Javadoc, TSDoc/JSDoc, Go doc comments) are out of scope and follow their own tool's conventions.
+description: "Guides writing, editing and reviewing comments inside code in any language: whether a comment is needed, where it goes and how to word it. Covers line and block comments only; doc comments (Javadoc, TSDoc/JSDoc, Go doc comments) follow their own tool's conventions. Use when adding, changing or reviewing code comments, TODOs, or a comment-only clean-up."
 ---
 
 # Code comments
 
+A project's own conventions override this skill.
+
 **Scope.** Line and block comments inside code. Doc comments are API documentation: write
 them the way their tool expects (summary, parameter and return tags, exceptions) and do not
-apply this skill to them. One exception: a doc-comment link to another package counts as an
-import for dependency rules. If that link is the only edge closing a cycle, name the target in
-plain words instead.
+apply this skill to them.
 
 ## The test
 
@@ -17,7 +17,7 @@ A comment earns its place only if it tells the reader something the code cannot.
 it loses nothing, do not write it. When code needs a comment to explain *what* it does, first
 try a better name or an extracted function.
 
-## Where a comment is required
+## Worth a comment
 
 - **Why, when it is not obvious:** a workaround, an outside constraint (protocol, spec, a bug in
   a dependency, with its public link), a choice that looks wrong but is deliberate.
@@ -27,7 +27,7 @@ try a better name or an extracted function.
 - **Surprises:** a deliberately empty catch, an intentional fallthrough, where a magic number
   comes from and its unit.
 - **Known limits:** a TODO that says in plain words what needs doing and why, not a bare
-  "TODO: fix". The same item gets a line in the project's todo file. Both go together.
+  "TODO: fix". Add a line in the project's todo file too, if it has one.
 
 ## Never
 
@@ -56,10 +56,8 @@ try a better name or an extracted function.
 
 ## Keeping it that way
 
-- A comment-only clean-up must be proven code-identical: strip comments from the old and new
-  files and diff them. It must not remove security, race or accessibility notes.
-- State this comment rule in the project conventions and in every implementer and reviewer
-  brief. A padded comment is a review finding.
+- A comment-only clean-up must be code-identical: strip comments from the old and new files and diff them. Keep security, race and accessibility notes.
+- State this comment rule in the project conventions and in every implementer and reviewer brief. A padded comment is a review finding.
 
 ## Examples
 
@@ -71,17 +69,6 @@ private static final Logger log = LoggerFactory.getLogger(Pool.class);
 // Good: says why
 // Leaving without taking an object: pass the signal on so a wake-up meant for us is not lost.
 available.signal();
-```
-
-```go
-// Bad
-// close the response body
-defer resp.Body.Close()
-
-// Good
-// Drain before closing so the transport can reuse the connection.
-io.Copy(io.Discard, resp.Body)
-resp.Body.Close()
 ```
 
 ```typescript
