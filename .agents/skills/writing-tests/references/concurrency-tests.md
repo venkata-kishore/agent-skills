@@ -15,6 +15,5 @@
 
 ## Folding helper copies into one shared helper
 
-- Check each caller's meaning, not only that it compiles. A private copy can bind a hidden default (the tenant, the clock, the connection pool). Example: a fold exposed a helper that counted one tenant's rows while the test acted in another.
-- Size the fold from a scan of the actual call shapes, not from a reviewer's count.
-- Propose the full helper API with counts first, then fold.
+- Check each caller's meaning, not only that it compiles: a private copy can bind a hidden default (tenant, clock, connection pool).
+- Propose the full helper API first, then fold.
