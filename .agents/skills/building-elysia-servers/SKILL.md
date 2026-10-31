@@ -1,9 +1,11 @@
 ---
 name: building-elysia-servers
-description: "Use when building, modifying or reviewing Elysia backend code on Bun: routes, services, TypeBox schemas, error handling, auth guards, bitmask RBAC, response shapes, rate limiting, logging, env config, Redis/Valkey, BullMQ queues and workers, payment providers and webhooks, or adding a new module."
+description: "Conventions for JavaScript backends on Bun with Elysia: routes, services, TypeBox schemas, error handling, auth guards, bitmask RBAC, response shapes, rate limiting, logging, env config, Redis/Valkey, BullMQ queues and workers, and payment providers and webhooks. Use when building, modifying or reviewing Elysia backend code, adding a new module, or touching any of those topics."
 ---
 
 # Elysia Server
+
+A project's own conventions override this skill.
 
 ## Runtime and tooling
 
@@ -18,7 +20,7 @@ bun run lint
 bun run fmt
 ```
 
-- Tests use `bun:test`. Follow the `writing-tests` skill: unit tests on exported functions by default, hand-rolled fakes, no live DB, Redis/Valkey, queue or network. Ask the owner before writing any other level.
+- Tests use `bun:test`. Follow the `writing-tests` skill: unit tests on exported functions by default, hand-rolled fakes, no live DB, Redis/Valkey, queue or network. Ask the user before writing any other level.
 - Test files live in the package's `test/` directory, mirroring `src/` (`test/modules/things/things.service.test.js`), never beside the source. Throwaway scripts go in `test/adhoc/` as plain `.js`, so `bun test` skips them.
 - Keep logic in plain functions with I/O at the edges, so unit tests need no infrastructure.
 - Prefer Bun native APIs where they fit.
@@ -30,7 +32,7 @@ bun run fmt
 
 Open a reference only when the task touches its topic.
 
-- `references/http.md`: validation split, error factories and the error handler, auth guards, bitmask RBAC, response shapes, app assembly.
+- `references/http.md`: route, service and schema examples, validation split, error factories and the error handler, auth guards, bitmask RBAC, response shapes, app assembly.
 - `references/workers.md`: BullMQ queues, worker processes, retries, the scheduler, the email worker.
 - `references/redis.md`: only when the project has Redis/Valkey: key prefixes, cache, semaphores, rate-limit counters, emailed links.
 - `references/payments.md`: only for payment providers: adapters, webhooks, reconciliation.
@@ -72,58 +74,18 @@ modules/<feature>/
 
 Database access goes in `<entity>.queries.js` files in the query layer for the package layout above, imported by the service.
 
-## Routes
+## Routes, services, schemas
 
-```js
-export const thingsRoutes = new Elysia({ name: "things.routes" })
-  .guard({ beforeHandle: [requireAuth()] }, (app) =>
-    app
-      .get("/api/things", async ({ user, query }) => {
-        const result = await listThings(user.userId, query);
-        return { things: result.items, total: result.total };
-      })
-      .post("/api/things", async ({ user, body, status }) => {
-        const thing = await createThing(user.userId, body);
-        return status(201, { thing });
-      }, { body: CreateThingBody }),
-  );
-```
+Code examples: `references/http.md`.
 
 - Name every plugin: `new Elysia({ name: "module.routes" })`.
 - Group routes with shared auth or permission needs under `.guard(...)`. Use a per-route `beforeHandle` when one route needs a permission.
-- Return creations as `status(201, { entity })`.
-- Destructure `user`, `body`, `query`, `params` and `status` from the handler context.
+- Return creations as `status(201, { entity })`. Destructure `user`, `body`, `query`, `params` and `status` from the handler context.
 - Ids that are bigint travel as strings in JSON (see `writing-database-code`).
-
-## Services
-
-```js
-import { insertThing } from "../../db/queries/things.queries.js";
-import { BadRequest } from "../../lib/errors.js";
-
-export async function createThing(userId, data) {
-  if (data.name.length < 3) throw BadRequest("Invalid request", "INVALID_NAME");
-  return await insertThing({ ...data, userId });
-}
-```
-
-- Plain exported async functions, no classes. Private helpers stay unexported.
-- Business validation and orchestration live here, DB operations come from query files.
-- Throw error factories (without `new`) for validation and business rules.
+- Services are plain exported async functions, no classes. Private helpers stay unexported.
+- Business validation and orchestration live in services, DB operations come from query files. Throw error factories (without `new`) for validation and business rules.
 - Dispatch side effects through queues, never from routes.
-
-## Schemas
-
-```js
-export const CreateThingBody = t.Object({
-  name: t.String({ minLength: 1 }),
-  description: t.Optional(t.String()),
-  priority: t.Integer({ minimum: 1, maximum: 5 }),
-});
-```
-
-- TypeBox covers structure only: shape, type, basic constraints. Apply it with `{ body }`, `{ query }` or `{ params }`.
-- Business rules stay in services. Never re-check in a service what a schema enforces.
+- TypeBox covers structure only: shape, type, basic constraints. Apply it with `{ body }`, `{ query }` or `{ params }`. Never re-check in a service what a schema enforces.
 
 ## Quick reference
 

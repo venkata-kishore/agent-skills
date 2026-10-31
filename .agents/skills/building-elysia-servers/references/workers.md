@@ -16,13 +16,12 @@ Queues are defined in the shared package, imported by server and workers:
 import { Queue } from "bullmq";
 
 const defaultOpts = {
-  prefix: "UQ",
+  prefix: "Q",
   connection: { url: process.env.REDIS_URL },
 };
 
-export const emailQueue = new Queue("email", defaultOpts);
-export const billingQueue = new Queue("billing", defaultOpts);
-export const cleanupQueue = new Queue("cleanup", defaultOpts);
+export const queueA = new Queue("queue-a", defaultOpts);
+export const queueB = new Queue("queue-b", defaultOpts);
 ```
 
 ### Retry policy
@@ -33,7 +32,7 @@ Declare it at queue creation.
 - Idempotent sweeps and scheduled jobs: one attempt. The next scheduled run is the retry.
 
 ```js
-export const emailQueue = new Queue("email", {
+export const queueA = new Queue("queue-a", {
   ...defaultOpts,
   defaultJobOptions: { attempts: 3, backoff: { type: "exponential", delay: 30_000 } },
 });
@@ -44,12 +43,8 @@ export const emailQueue = new Queue("email", {
 Services add jobs, never routes.
 
 ```js
-await emailQueue.add("send-email", {
-  template: "welcome",
-  to: user.email,
-  data: { fullName: user.fullName },
-});
-await billingQueue.add("process-refund", { subscriptionId, reason });
+await queueA.add("do-thing", { thingId, reason });
+await queueB.add("do-other-thing", { userId });
 ```
 
 ## Worker file structure
@@ -82,7 +77,7 @@ const domainWorker = new Worker(
         log.warn({ jobName: job.name }, "unknown job");
     }
   },
-  { ...defaultRedisOpts, concurrency: 5 },
+  { ...defaultOpts, concurrency: 5 },
 );
 
 domainWorker.on("failed", (job, err) => {
@@ -96,8 +91,8 @@ A declarative registry; the scheduler worker enqueues to target queues on cron p
 
 ```js
 const SCHEDULERS = [
-  { id: "clean-tokens", pattern: "0 3 * * *", queue: "cleanup", jobName: "clean-tokens" },
-  { id: "sweep-past-due", pattern: "0 */12 * * *", queue: "billing", jobName: "sweep-past-due" },
+  { id: "do-thing-daily", pattern: "0 3 * * *", queue: "queue-a", jobName: "do-thing" },
+  { id: "sweep-stale", pattern: "0 */12 * * *", queue: "queue-b", jobName: "sweep-stale" },
 ];
 ```
 
@@ -114,7 +109,7 @@ process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
 
 Bun.serve({
-  port: Number(process.env.WORKER_HEALTH_PORT) || 3001,
+  port: Number(process.env.WORKER_HEALTH_PORT) || 4001,
   fetch(req) {
     if (new URL(req.url).pathname === "/healthz") {
       return Response.json({ status: "healthy", timestamp: DateTime.now().toISO() });
@@ -124,7 +119,7 @@ Bun.serve({
 });
 ```
 
-The health port differs from the API port.
+The port above is an example. It must differ from the API port and from the frontend dev server's.
 
 ## Email worker
 
@@ -132,16 +127,16 @@ The health port differs from the API port.
 - Daily send cap through a Redis counter; overflow is delayed to the next midnight.
 - Worker rate limiter `{ max: 12, duration: 1000 }`, concurrency 5.
 - The send call to the mail provider uses the timeout and circuit breaker from `ops.md`.
-- Emailed links follow `redis.md`: GET never changes state.
+- Emailed link rules: `securing-applications`.
 
 ## Conventions
 
 | Rule | Detail |
 |------|--------|
-| Job names | kebab-case: `"send-email"`, `"sweep-past-due"` |
+| Job names | kebab-case: `"send-email"`, `"sweep-stale"` |
 | Logging | `createLogger("worker:domain")`; log failures in the `"failed"` handler |
 | Errors | Let BullMQ retry on throw |
-| Concurrency | Per worker, by I/O profile (email 5, cleanup 1, billing 3) |
+| Concurrency | Per worker, by I/O profile (for example 5 for I/O-heavy, 1 for sweeps) |
 | Idempotency | Every job is safe to retry: idempotent DB operations (`writing-database-code`) |
 | Imports | Workers never import from the server package |
 | Delayed jobs | `job.moveToDelayed(timestamp, token)` then `throw new DelayedError()` |

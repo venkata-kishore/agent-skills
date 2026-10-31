@@ -17,7 +17,7 @@ Separate prefixes keep flushes, monitoring and eviction safe: clearing the cache
 ## Cache
 
 - Short-lived tokens (emailed links, one-time codes): `SET` with a TTL, single use, deleted on read.
-- Emailed links never change state on a plain GET, because mail scanners and previewers fetch them. The link opens a page that confirms the action, and the POST behind a button consumes the token.
+- Emailed link rules: `securing-applications`.
 - Counters: `INCR` with expiry for windowed limits, such as a daily email cap.
 - The cache is disposable. The app stays correct, only slower, when it is empty or the store is down.
 
@@ -36,7 +36,7 @@ Rules:
 
 Store-backed counters exposed as named tiers (`"strict"`, `"moderate"`) that route middleware consumes (see `http.md`).
 
-- The key holds no personal data: the user id when known, otherwise a keyed hash. Never the raw IP, email or token.
+- Key contents: `securing-applications`.
 - Unauthenticated routes get a lower tier.
 - Count before any database read where that is cheap.
 - Keep the limits in the application.

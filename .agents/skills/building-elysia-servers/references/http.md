@@ -1,8 +1,38 @@
 # HTTP, validation, auth and errors
 
+## Routes, services, schemas
+
+```js
+export const thingsRoutes = new Elysia({ name: "things.routes" })
+  .guard({ beforeHandle: [requireAuth()] }, (app) =>
+    app
+      .get("/api/things", async ({ user, query }) => {
+        const result = await listThings(user.userId, query);
+        return { things: result.items, total: result.total };
+      })
+      .post("/api/things", async ({ user, body, status }) => {
+        const thing = await createThing(user.userId, body);
+        return status(201, { thing });
+      }, { body: CreateThingBody }),
+  );
+```
+
+```js
+// things.service.js
+import { insertThing } from "../../db/queries/things.queries.js";
+import { BadRequest } from "../../lib/errors.js";
+
+export async function createThing(userId, data) {
+  if (data.name.length < 3) throw BadRequest("Invalid request", "INVALID_NAME");
+  return await insertThing({ ...data, userId });
+}
+```
+
+The schema example is in the next section.
+
 ## Validation: two layers
 
-Layer 1, the schema (route level): TypeBox checks shape, types and basic constraints. Failures reach the error handler as `VALIDATION` and answer 400.
+Layer 1, the schema (route level): TypeBox checks shape, types and basic constraints. Failures reach the error handler as `VALIDATION`. Elysia's own default status for a failed validation is 422; this skill's handler maps it to 400 on purpose, so the API has one client-error status. Keep that mapping unless the project says otherwise.
 
 ```js
 export const CreateThingBody = t.Object({
@@ -27,7 +57,7 @@ Layer 2, the service: rules a schema cannot express.
 | Authorization context (another user's resource) | Service |
 | External checks | Service |
 
-Never repeat a schema rule in the service. Uniqueness is checked in the service for a friendly answer, but a unique index is only added with owner approval and never backs an upsert (`writing-database-code`).
+Never repeat a schema rule in the service. Check uniqueness in the service for a friendly answer; unique-index rules are in `writing-database-code`.
 
 ## Errors
 
@@ -52,7 +82,7 @@ Register `.onError()` on the root app and `.error({ HttpError })` so the class i
 - `VALIDATION` and `PARSE`: 400.
 - `NOT_FOUND`: 404.
 - `HttpError`: its own status.
-- Postgres errors: `23505` and `23503` map to 409, `23502` to 400. The body stays generic: never forward the driver message or constraint name.
+- Postgres errors: `23505` and `23503` map to 409, `23502` (NOT NULL violation) to 500, because it is a server bug, not client input. The body stays generic: never forward the driver message or constraint name.
 - Anything else: 500 with a generic body.
 
 Every error body has the same shape:
@@ -65,7 +95,7 @@ Keep `data` free of internals and of anything the caller sent.
 
 ## Auth and guards
 
-One proven pattern. Adapt the mechanism and permission model to the app.
+Default pattern: global resolve plus per-route guards. Change the mechanism or permission model only when the project already uses another.
 
 ### Global resolve plus per-route guards
 
