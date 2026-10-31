@@ -5,7 +5,7 @@ description: "Applies the user's house rules for the data layer of a SQL databas
 
 # Writing database code
 
-A project's own conventions override this skill. Data-layer rules for any SQL database; PostgreSQL is assumed where it matters.
+Data-layer rules for any SQL database; PostgreSQL is assumed where it matters.
 
 ## References
 

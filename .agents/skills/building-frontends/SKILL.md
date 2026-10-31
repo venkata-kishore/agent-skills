@@ -5,8 +5,6 @@ description: "Conventions for frontends built with Vue, Nuxt, React or Next.js o
 
 # Frontend Conventions
 
-A project's own conventions override this skill.
-
 ## Tooling
 
 - Bun for runtime and packages (never npm, yarn or node). Vite via the framework. Tailwind CSS v4 (CSS-first, `@theme`). oxlint for linting, oxfmt for formatting (printWidth 100).

@@ -5,8 +5,6 @@ description: "Sets test discipline: scope and levels, fixtures, hand-written fak
 
 # Test discipline
 
-A project's own conventions override this skill.
-
 ## Scope
 
 - Write unit tests on functions and methods by default.

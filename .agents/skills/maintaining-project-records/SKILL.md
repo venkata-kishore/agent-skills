@@ -5,7 +5,7 @@ description: "Keeps project memory in the repo: handoff, todo, questions, requir
 
 # Maintaining project records
 
-A project's own conventions override this skill. Project memory lives in the repo, not in chat. One
+Project memory lives in the repo, not in chat. One
 home per kind of fact, updated in the same commit as the change it describes. Git history holds
 everything else.
 

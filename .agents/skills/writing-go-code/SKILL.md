@@ -5,8 +5,6 @@ description: "Sets Go conventions for error handling, context, concurrency, gene
 
 # Go Conventions
 
-A project's own conventions override this skill.
-
 Checked against Go 1.27 (current stable). Where the style guides (Effective Go, Code Review Comments, Google, Uber) disagree, this skill picks a default and says so.
 
 ## Before writing any Go

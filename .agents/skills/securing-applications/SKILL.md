@@ -5,8 +5,6 @@ description: "Secures application code on any stack: password hashing, injection
 
 # Security baseline
 
-A project's own conventions override this skill.
-
 ## Core web rules
 
 - Hash passwords with a slow memory-hard hash, Argon2id first, never a fast hash such as SHA-2 or MD5. OWASP minimum for Argon2id: 19 MiB memory, 2 iterations, 1 parallelism; use the project's numbers if set.

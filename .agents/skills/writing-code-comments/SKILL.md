@@ -5,8 +5,6 @@ description: "Guides writing, editing and reviewing comments inside code in any 
 
 # Code comments
 
-A project's own conventions override this skill.
-
 **Scope.** Line and block comments inside code. Doc comments are API documentation: write
 them the way their tool expects (summary, parameter and return tags, exceptions) and do not
 apply this skill to them.

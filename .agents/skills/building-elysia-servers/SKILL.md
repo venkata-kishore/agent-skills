@@ -5,8 +5,6 @@ description: "Conventions for JavaScript backends on Bun with Elysia: routes, se
 
 # Elysia Server
 
-A project's own conventions override this skill.
-
 ## Runtime and tooling
 
 Bun is the runtime and package manager. Do not use `npm`, `pnpm`, `yarn` or `node` for project commands.
