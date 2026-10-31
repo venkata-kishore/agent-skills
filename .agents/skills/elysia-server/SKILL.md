@@ -1,15 +1,13 @@
 ---
 name: elysia-server
-version: 3
-description: Use when building, modifying, or reviewing Elysia backend code — routes, services, error handling, validation, auth guards, RBAC permissions, response formatting, Redis/Valkey usage, queues, payment integration, or adding new modules
-agents: [main_agent, general_purpose]
+description: Use when building, modifying or reviewing Elysia backend code on Bun: routes, services, TypeBox schemas, error handling, auth guards, bitmask RBAC, response shapes, rate limiting, logging, env config, Redis/Valkey, BullMQ queues and workers, payment providers and webhooks, or adding a new module.
 ---
 
 # Elysia Server
 
-## Runtime & Tooling
+## Runtime and tooling
 
-Bun is the runtime and package manager. Do not use `npm`, `pnpm`, `yarn`, or `node` for project commands.
+Bun is the runtime and package manager. Do not use `npm`, `pnpm`, `yarn` or `node` for project commands.
 
 ```bash
 bun --watch backend/server/src/index.js
@@ -20,66 +18,63 @@ bun run lint
 bun run fmt
 ```
 
-Key rules:
+- Tests use `bun:test`. Follow the `test-discipline` skill: unit tests on exported functions by default, hand-rolled fakes, no live DB, Redis/Valkey, queue or network. Ask the owner before writing any other level.
+- Test files live in the package's `test/` directory, mirroring `src/` (`test/modules/things/things.service.test.js`), never beside the source. Throwaway scripts go in `test/adhoc/` as plain `.js`, so `bun test` skips them.
+- Keep logic in plain functions with I/O at the edges, so unit tests need no infrastructure.
+- Prefer Bun native APIs where they fit.
+- Use `oxlint` and `oxfmt`, print width 100. Leave the formatting of unchanged code alone.
+- Write `.js` unless the project chooses TypeScript.
+- Use Luxon `DateTime` for all date and time work, never native `Date`.
 
-- Use `bun:test` for backend testing. Tests are unit-level — exported functions/methods — and by default run with zero infra: no live DB, Redis/Valkey, queues, or network. Infra-backed integration tests only when the user explicitly asks. (Frontend is the opposite: e2e only, see `frontend-conventions`.)
-- Test files live under a per-package `test/` directory mirroring `src/` (e.g. `apps/api/test/modules/loans/loans.service.test.js`), never co-located beside source. Ad-hoc/throwaway scripts (smokes, one-off probes) go in `test/adhoc/` as plain `.js` — not `*.test.js`, so `bun test` skips them. `bun test` discovers tests anywhere, so no script/config change is needed.
-- Every test must pin a behavior that can actually regress: a transformation, a branch, a boundary, a contract with consequences. Do not write field-passthrough assertions, `expect(...).not.toThrow()`, defaults the language already guarantees, or the same logic re-tested through trivially different inputs. Table-driven tests are fine only when each row pins a distinct real behavior. Test count is not a quality signal. When dispatching subagents to write tests, state this rule in the prompt and prune violations from their output.
-- Prefer Bun native APIs where applicable.
-- Use `oxlint` and `oxfmt` with print width 100.
-- Prefer JavaScript `.js` for rapid prototyping unless the project explicitly chooses TypeScript.
-- Use Luxon `DateTime` for all date/time work; never native JS `Date`.
-- Respect existing formatting in unchanged code.
+## References
 
-## Supporting References
+Open a reference only when the task touches its topic.
 
-- Use `http.md` for validation, error handling, auth guards, bitmask RBAC, response conventions, and app assembly.
-- Use `workers.md` for BullMQ queues, background workers, schedulers, retries, and worker conventions.
-- Use `redis.md` when the project uses Redis/Valkey — key namespacing, cache patterns, distributed semaphores, and concurrency claims. Skip it when there is no key-value store.
-- Use `payments.md` when integrating payment providers — provider abstraction, webhooks, and reconciliation, framed as suggestions rather than rules.
-- Use `ops.md` for logging, environment config, runtime reminders, and operational safety.
-- For database queries, status conventions, constants, ID strategy, and mappers, use the `database-conventions` skill.
+- `references/http.md`: validation split, error factories and the error handler, auth guards, bitmask RBAC, response shapes, app assembly.
+- `references/workers.md`: BullMQ queues, worker processes, retries, the scheduler, the email worker.
+- `references/redis.md`: only when the project has Redis/Valkey: key prefixes, cache, semaphores, rate-limit counters, emailed links.
+- `references/payments.md`: only for payment providers: adapters, webhooks, reconciliation.
+- `references/ops.md`: logging, env config, outbound calls (timeout and circuit breaker), operational safety.
 
-## Architecture Layers
+Other skills own these topics. Do not restate them here.
+
+- `database-conventions`: queries, transactions, status codes, unique indexes, idempotency, ids, mappers.
+- `security-baseline`: auth, audit, what a log line may carry, rate-limit keys, generic errors, emailed links, uploads.
+- `test-discipline`: test levels and style.
+
+## Architecture layers
 
 ```text
-Routes (.routes.js) → Services (.service.js) → Shared queries (.queries.js) → DB client
+Routes (.routes.js) -> Services (.service.js) -> Shared queries (.queries.js) -> DB client
 ```
 
-- **Routes**: HTTP concerns only — validate input, call service, return response.
-- **Services**: Business logic — orchestrate queries, throw typed errors, enqueue jobs.
-- **Shared queries**: Pure DB operations in the query layer (see Package Layout); one function per operation, no business logic.
+- Routes: HTTP only. Validate input, call a service, return the response.
+- Services: business logic. Orchestrate queries, throw typed errors, enqueue jobs.
+- Queries: one function per DB operation, no business logic.
 
-## Package Layout
+## Package layout
 
-Layout follows what the project actually runs — check which processes exist before placing code; never carry paths from one project into another:
+Check which processes the project runs before placing code. Never carry paths over from another project.
 
-- **Server only**: keep everything inside the server package; the DB client and `db/queries/` live there directly.
-- **Server + workers** (any second server-side process): move the DB client, query files, queue definitions, and other shared server code into a server-side common package both processes import — one query function, two consumers, no duplication.
-- Constants and enums shared with the frontend get their own FE+BE package; never put server code (DB, queues, secrets) in it.
-- Dependency direction is one-way: shared constants package → server common package → server and workers. Workers never import from the server package.
+- Server only: everything stays in the server package, including the DB client and `db/queries/`.
+- Server plus workers (any second server-side process): move the DB client, query files and queue definitions into a server-side common package both import. One query function, two consumers.
+- Constants and enums shared with the frontend get their own package. No server code (DB, queues, secrets) in it.
+- Dependencies point one way: shared constants, then server common, then server and workers. Workers never import from the server package.
 
-## Feature Module Structure (3-File Pattern)
-
-Every Elysia feature module follows this route/service/schema organization:
+## Feature module
 
 ```text
 modules/<feature>/
-  <feature>.routes.js    # Elysia route handlers
-  <feature>.service.js   # Business logic
-  <feature>.schema.js    # TypeBox validation schemas
+  <feature>.routes.js    # Elysia handlers
+  <feature>.service.js   # business logic
+  <feature>.schema.js    # TypeBox schemas
 ```
 
-When a feature needs database access, put DB operations in query files (`<entity>.queries.js`) in the query layer for the project's package layout (see Package Layout), then import those query functions from the service. See the `database-conventions` skill for query, transaction, and mapping specifics.
+Database access goes in `<entity>.queries.js` files in the query layer for the package layout above, imported by the service.
 
 ## Routes
 
 ```js
-import { Elysia } from "elysia";
-import { requireAuth, requirePermission } from "../../middleware/rbac.middleware.js";
-import { CreateThingBody } from "./things.schema.js";
-import { createThing, listThings } from "./things.service.js";
-
 export const thingsRoutes = new Elysia({ name: "things.routes" })
   .guard({ beforeHandle: [requireAuth()] }, (app) =>
     app
@@ -94,79 +89,61 @@ export const thingsRoutes = new Elysia({ name: "things.routes" })
   );
 ```
 
-Route conventions:
-
-- Use named Elysia plugins: `new Elysia({ name: "module.routes" })`.
-- Group routes by shared auth/permission requirements with `.guard(...)`.
-- Use per-route guards with `beforeHandle` when only one route needs a permission.
-- Return creation responses as `status(201, { entity })`.
-- Destructure `user`, `body`, `query`, `params`, and `status` from handler context.
+- Name every plugin: `new Elysia({ name: "module.routes" })`.
+- Group routes with shared auth or permission needs under `.guard(...)`. Use a per-route `beforeHandle` when one route needs a permission.
+- Return creations as `status(201, { entity })`.
+- Destructure `user`, `body`, `query`, `params` and `status` from the handler context.
+- Ids that are bigint travel as strings in JSON (see `database-conventions`).
 
 ## Services
 
 ```js
-// query layer — location varies by package layout (see Package Layout)
 import { insertThing } from "../../db/queries/things.queries.js";
 import { BadRequest } from "../../lib/errors.js";
 
 export async function createThing(userId, data) {
-  if (data.name.length < 3) throw BadRequest("Name too short", "INVALID_NAME");
+  if (data.name.length < 3) throw BadRequest("Invalid request", "INVALID_NAME");
   return await insertThing({ ...data, userId });
 }
 ```
 
-Service conventions:
-
-- Use plain exported async functions; no classes.
-- Keep business validation and orchestration in services.
-- Import DB operations from shared query files.
-- Throw error factories for validation and business rules.
-- Keep private helpers unexported at module scope.
-- Dispatch side effects from services through queues, never directly from routes.
+- Plain exported async functions, no classes. Private helpers stay unexported.
+- Business validation and orchestration live here, DB operations come from query files.
+- Throw error factories (without `new`) for validation and business rules.
+- Dispatch side effects through queues, never from routes.
 
 ## Schemas
 
 ```js
-import { t } from "elysia";
-
 export const CreateThingBody = t.Object({
   name: t.String({ minLength: 1 }),
   description: t.Optional(t.String()),
   priority: t.Integer({ minimum: 1, maximum: 5 }),
-  tags: t.Optional(t.Array(t.String(), { minItems: 1 })),
 });
 ```
 
-Schema conventions:
+- TypeBox covers structure only: shape, type, basic constraints. Apply it with `{ body }`, `{ query }` or `{ params }`.
+- Business rules stay in services. Never re-check in a service what a schema enforces.
 
-- Use TypeBox schemas for structural validation: shape, type, basic constraints.
-- Keep business validation in services, not schemas.
-- Do not duplicate schema-enforced rules in service code.
-- Apply schemas declaratively on routes with `{ body }`, `{ query }`, or `{ params }`.
-
-## Quick Reference
+## Quick reference
 
 | Need | Pattern |
 |------|---------|
-| New module | Create routes + service + schema files |
-| DB access | Add/import a query function from the project's query layer (see Package Layout + `database-conventions`) |
+| New module | routes + service + schema files |
+| DB access | query function in the query layer (`database-conventions`) |
 | Auth required | `beforeHandle: [requireAuth()]` or `.guard(...)` |
-| Permission check | `beforeHandle: [requirePermission("DOMAIN", DOMAIN.FLAG)]` |
+| Permission | `beforeHandle: [requirePermission("DOMAIN", DOMAIN.FLAG)]` |
 | Rate limit | `beforeHandle: [rateLimit("strict")]` or `rateLimit("moderate")` |
-| Throw error | `throw NotFound("message", "ERROR_CODE")` |
-| Async side effect | `queue.add("jobName", payload)` from service layer |
-| Date/time | Luxon `DateTime` for all date/time work — never native JS `Date` |
-| BigInt IDs | Use `{ mode: "string" }` and handle as strings |
+| Error | `throw NotFound("Not found", "ERROR_CODE")` |
+| Side effect | `queue.add("jobName", payload)` from a service |
+| Call to a dependency | short timeout plus circuit breaker (`references/ops.md`) |
 
-## Common Mistakes
+## Common mistakes
 
-- Putting DB queries directly in route handlers.
-- Putting business logic in route handlers.
-- Putting business validation in schema files.
-- Duplicating schema validation in service code.
-- Using `new` with error factories.
-- Dispatching queue jobs directly from routes.
-- Using native JS `Date` instead of Luxon `DateTime`.
-- Writing tests that require a live DB/Redis by default — unit tests run infra-free; integration tests only on request.
-- Co-locating test files beside source in `src/` — they belong under the package's `test/` dir; throwaway scripts under `test/adhoc/` as plain `.js`.
-- Padding test suites with passthrough/no-throw/duplicate-input tests — every test must pin a behavior that can regress.
+- DB queries or business logic in route handlers.
+- Business validation in schemas, or schema rules repeated in services.
+- `new` with error factories.
+- Queue jobs dispatched from routes.
+- Native `Date` instead of Luxon.
+- Tests that need live infrastructure, sit beside source, or assert nothing that can regress.
+- Messages in errors that reveal whether an account, email or record exists.
