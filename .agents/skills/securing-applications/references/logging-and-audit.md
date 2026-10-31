@@ -9,6 +9,8 @@
 | Sign-in attempt for an unknown identifier | security log line only |
 | Refusal of a deactivated account | security log line only, same response as any other refusal |
 
+The deactivated-account row is log-only by default: the refusal must look identical to any other, and an audit row would add an observable difference if the audit is user-visible.
+
 ## Security log line
 
 - Allowed: source IP, user agent, keyed hash of the attempted identifier, internal user id.
@@ -20,8 +22,8 @@
 
 - Actor, action, target, time, and a result.
 - No secrets, no token values, no client IP.
-- Audit by default for each user-affecting action. Do not ask whether to audit.
-- Mutations are audited per the project's data-access rules; do not invent a second mechanism.
+- Audit by default for each user-affecting action: sign-in and security events, credential and status changes, link requests, settings writes. Do not ask whether to audit.
+- Mutations are audited per the project's data-access rules (`writing-database-code`, Tenancy); do not invent a second mechanism.
 
 ## Rate-limit key
 
