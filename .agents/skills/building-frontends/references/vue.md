@@ -2,8 +2,7 @@
 
 ## Script setup
 
-`<script setup>` only: no Options API. Order inside it: imports, store and composable setup, props
-and emits, reactive state, computed, functions, lifecycle.
+`<script setup>` only: no Options API. Order inside it: imports, store and composable setup, props and emits, reactive state, computed, functions, lifecycle.
 
 ```js
 import { ref, computed, onMounted } from "vue";
@@ -17,20 +16,16 @@ const hasItems = computed(() => thingStore.items.length > 0);
 onMounted(loadData);
 ```
 
-Assign a store to a named variable (`const thingStore = ...`) before calling it. Pages do not
-import the API client.
+Assign a store to a named variable (`const thingStore = ...`) before calling it. Pages do not import the API client.
 
 ## Reactivity
 
-- `ref()` for primitives, reassignable objects and template refs; `reactive()` for form state that
-  is never reassigned; `computed()` for derived values; `watch` for specific sources.
-- Destructuring `reactive()` or a store breaks reactivity. Use `toRefs(state)`, or
-  `storeToRefs(store)` for state and getters. Actions destructure directly.
+- `ref()` for primitives, reassignable objects and template refs; `reactive()` for form state that is never reassigned; `computed()` for derived values; `watch` for specific sources.
+- Destructuring `reactive()` or a store breaks reactivity. Use `toRefs(state)`, or `storeToRefs(store)` for state and getters. Actions destructure directly.
 
 ## Pinia setup stores
 
-Always the setup form: state refs, computed, plain `async function` actions, return everything flat.
-Only the store calls the API client.
+Always the setup form: state refs, computed, plain `async function` actions, return everything flat. Only the store calls the API client.
 
 ```js
 export const useThingStore = defineStore("thing", () => {
@@ -61,21 +56,17 @@ export const useThingStore = defineStore("thing", () => {
 
 ## Composables
 
-`useXxx.js` exports `useXxx()` and returns an object (never a bare ref). A module-level `ref` makes
-a singleton shared across components; a function-scoped one is per instance.
+`useXxx.js` exports `useXxx()` and returns an object (never a bare ref). A module-level `ref` makes a singleton shared across components; a function-scoped one is per instance.
 
 ## Component API
 
 - Runtime prop declarations with types and defaults; `defineEmits` with kebab-case event names.
-- Props down, events up. No event bus, no `provide`/`inject` for events (injection only), no
-  `$parent`, never mutate props.
+- Props down, events up. No event bus, no `provide`/`inject` for events (injection only), no `$parent`, never mutate props.
 - `defineExpose` plus a template ref only for rare imperative control (`focus`, `clear`).
 
 ## Lifecycle
 
-`onMounted` for fetching, DOM access and listeners. `onUnmounted` for cleanup (intervals,
-listeners, subscriptions). Options API names do not carry over: `beforeMount` is `onBeforeMount`,
-and the `<script setup>` body replaces `created`.
+`onMounted` for fetching, DOM access and listeners. `onUnmounted` for cleanup (intervals, listeners, subscriptions). Options API names do not carry over: `beforeMount` is `onBeforeMount`, and the `<script setup>` body replaces `created`.
 
 ## Page data loading
 

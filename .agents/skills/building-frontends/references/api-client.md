@@ -1,13 +1,10 @@
 # API client and errors
 
-Only stores (or the data layer behind them) use the client. Pages and components call store
-actions. One client instance per app.
+Only stores (or the data layer behind them) use the client. Pages and components call store actions. One client instance per app.
 
 ## Client
 
-Check the installed `ky` version first; the option names differ. In ky v2 the base option is
-`prefix` (slashes are normalized) and hooks receive one state object. In ky v1 it is `prefixUrl`,
-hooks take positional arguments, and a leading slash on the path throws.
+Check the installed `ky` version first; the option names differ. In ky v2 the base option is `prefix` (slashes are normalized) and hooks receive one state object. In ky v1 it is `prefixUrl`, hooks take positional arguments, and a leading slash on the path throws.
 
 ```js
 // composables/useApi.js (ky v2 shape)
@@ -45,11 +42,9 @@ export function useApi() {
 }
 ```
 
-- One shared refresh across concurrent 401s. Skip the auth endpoints: a failed login must not
-  trigger a refresh.
+- One shared refresh across concurrent 401s. Skip the auth endpoints: a failed login must not trigger a refresh.
 - Failed refresh: clear auth state, reset every per-user store, redirect to login.
-- On a failed request the thrown error carries the parsed body as `err.data`. Read only its
-  `errorCode` (and structured fields such as per-field codes); see below.
+- On a failed request the thrown error carries the parsed body as `err.data`. Read only its `errorCode` (and structured fields such as per-field codes); see below.
 
 ## Error codes and the message helper
 
@@ -68,10 +63,8 @@ export function messageForError(err) {
 }
 ```
 
-- Never match `err.message` or any server text, and never show the raw body, `err.message` or a
-  stack trace.
-- A refusal the UI wants to word differently gets its own `errorCode` from the backend, not a text
-  match on the client.
+- Never match `err.message` or any server text, and never show the raw body, `err.message` or a stack trace.
+- A refusal the UI wants to word differently gets its own `errorCode` from the backend, not a text match on the client.
 - Where the message goes:
   - Form or single action: an inline error beside the field or form.
   - Dashboard action: a toast (`Saved` on success, `messageForError(err)` on failure).
