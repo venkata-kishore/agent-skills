@@ -142,6 +142,6 @@ The health port differs from the API port.
 | Logging | `createLogger("worker:domain")`; log failures in the `"failed"` handler |
 | Errors | Let BullMQ retry on throw |
 | Concurrency | Per worker, by I/O profile (email 5, cleanup 1, billing 3) |
-| Idempotency | Every job is safe to retry: idempotent DB operations (`database-conventions`) |
+| Idempotency | Every job is safe to retry: idempotent DB operations (`writing-database-code`) |
 | Imports | Workers never import from the server package |
 | Delayed jobs | `job.moveToDelayed(timestamp, token)` then `throw new DelayedError()` |

@@ -1,5 +1,5 @@
 ---
-name: test-discipline
+name: writing-tests
 description: "Use when writing, changing, reviewing or debugging tests, in any language: choosing test scope and levels, fixtures, fakes, injected clocks, test timeouts, flaky, hanging or slow tests, race and concurrency tests, structural guard scripts, and reading test results after a targeted run. Has stack notes for the JVM, PostgreSQL lock waits and workflow test servers with time skipping."
 ---
 

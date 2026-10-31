@@ -1,5 +1,5 @@
 ---
-name: elysia-server
+name: building-elysia-servers
 description: "Use when building, modifying or reviewing Elysia backend code on Bun: routes, services, TypeBox schemas, error handling, auth guards, bitmask RBAC, response shapes, rate limiting, logging, env config, Redis/Valkey, BullMQ queues and workers, payment providers and webhooks, or adding a new module."
 ---
 
@@ -18,7 +18,7 @@ bun run lint
 bun run fmt
 ```
 
-- Tests use `bun:test`. Follow the `test-discipline` skill: unit tests on exported functions by default, hand-rolled fakes, no live DB, Redis/Valkey, queue or network. Ask the owner before writing any other level.
+- Tests use `bun:test`. Follow the `writing-tests` skill: unit tests on exported functions by default, hand-rolled fakes, no live DB, Redis/Valkey, queue or network. Ask the owner before writing any other level.
 - Test files live in the package's `test/` directory, mirroring `src/` (`test/modules/things/things.service.test.js`), never beside the source. Throwaway scripts go in `test/adhoc/` as plain `.js`, so `bun test` skips them.
 - Keep logic in plain functions with I/O at the edges, so unit tests need no infrastructure.
 - Prefer Bun native APIs where they fit.
@@ -38,9 +38,9 @@ Open a reference only when the task touches its topic.
 
 Other skills own these topics. Do not restate them here.
 
-- `database-conventions`: queries, transactions, status codes, unique indexes, idempotency, ids, mappers.
-- `security-baseline`: auth, audit, what a log line may carry, rate-limit keys, generic errors, emailed links, uploads.
-- `test-discipline`: test levels and style.
+- `writing-database-code`: queries, transactions, status codes, unique indexes, idempotency, ids, mappers.
+- `securing-applications`: auth, audit, what a log line may carry, rate-limit keys, generic errors, emailed links, uploads.
+- `writing-tests`: test levels and style.
 
 ## Architecture layers
 
@@ -93,7 +93,7 @@ export const thingsRoutes = new Elysia({ name: "things.routes" })
 - Group routes with shared auth or permission needs under `.guard(...)`. Use a per-route `beforeHandle` when one route needs a permission.
 - Return creations as `status(201, { entity })`.
 - Destructure `user`, `body`, `query`, `params` and `status` from the handler context.
-- Ids that are bigint travel as strings in JSON (see `database-conventions`).
+- Ids that are bigint travel as strings in JSON (see `writing-database-code`).
 
 ## Services
 
@@ -130,7 +130,7 @@ export const CreateThingBody = t.Object({
 | Need | Pattern |
 |------|---------|
 | New module | routes + service + schema files |
-| DB access | query function in the query layer (`database-conventions`) |
+| DB access | query function in the query layer (`writing-database-code`) |
 | Auth required | `beforeHandle: [requireAuth()]` or `.guard(...)` |
 | Permission | `beforeHandle: [requirePermission("DOMAIN", DOMAIN.FLAG)]` |
 | Rate limit | `beforeHandle: [rateLimit("strict")]` or `rateLimit("moderate")` |

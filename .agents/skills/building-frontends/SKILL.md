@@ -1,5 +1,5 @@
 ---
-name: frontend-conventions
+name: building-frontends
 description: "Use when building, modifying or reviewing frontend code in Vue, Nuxt or React: component structure, composables and hooks, stores and state, API client, errors, auth, permissions, forms, design tokens and Tailwind, accessibility, performance, XSS and input validation, naming, imports, tests, or adding pages and features."
 ---
 

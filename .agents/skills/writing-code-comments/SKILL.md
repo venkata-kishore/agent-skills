@@ -1,5 +1,5 @@
 ---
-name: code-comments
+name: writing-code-comments
 description: Use when writing, editing or reviewing comments inside code, in any language - deciding whether a comment is needed, where it goes and how to word it. Covers line and block comments only. Doc comments (Javadoc, TSDoc/JSDoc, Go doc comments) are out of scope and follow their own tool's conventions.
 ---
 

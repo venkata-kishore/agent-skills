@@ -1,5 +1,5 @@
 ---
-name: database-conventions
+name: writing-database-code
 description: Use when writing or reviewing database code, schema design, migrations, indexes, unique constraints, status or enum columns, ID generation, idempotent writes, transactions, JSON columns, raw SQL, shared constants, or DB-to-API mappers. Any SQL database (PostgreSQL assumed where it matters); Drizzle ORM and PostgreSQL specifics are in references.
 ---
 

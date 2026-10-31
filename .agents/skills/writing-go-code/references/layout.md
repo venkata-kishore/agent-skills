@@ -130,7 +130,7 @@ Default: pgx v5 via `pgxpool` plus sqlc with `sql_package: "pgx/v5"`. No ORM.
 - Translate `pgx.ErrNoRows` to a domain `ErrNotFound` inside the store. Callers never import pgx.
 - Pass `ctx` to every query. Use a transaction helper `func (s *Store) tx(ctx, func(q *sqlcgen.Queries) error) error` that commits or rolls back.
 - Store tests against a real Postgres are integration tests: ask the owner first, then build-tag them and use transaction-per-test for isolation.
-- Schema rules (status values, no CHECK, DEFAULT or triggers, unique-index approval, bigint ids, UTC) are in `database-conventions`.
+- Schema rules (status values, no CHECK, DEFAULT or triggers, unique-index approval, bigint ids, UTC) are in `writing-database-code`.
 
 Migrations: goose with embedded SQL (`//go:embed migrations/*.sql`, `goose.SetBaseFS`). One file per migration with `-- +goose Up` and `-- +goose Down`. Zero-pad versions (`00001_init.sql`) because sqlc reads them lexicographically. Expose `<app>-server migrate up` so self-hosters need no extra tool. In SaaS deploys run migrations as an explicit step, not on every instance boot. Alternatives already in use: tern (pgx-native), golang-migrate (needs paired up/down files).
 

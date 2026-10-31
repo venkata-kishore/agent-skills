@@ -77,13 +77,13 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 
 # Code
 
-- No code comments that restate the code. A comment must tell the reader something the line itself cannot: why it is done, an invariant, an ordering or concurrency argument, a non-obvious consequence. Details: the `code-comments` skill.
+- No code comments that restate the code. A comment must tell the reader something the line itself cannot: why it is done, an invariant, an ordering or concurrency argument, a non-obvious consequence. Details: the `writing-code-comments` skill.
 - Mechanical bulk rewrites touch only the lines they must. Do not reorder unrelated lines.
 - When packages of one layer import each other, move the shared piece into a helper package both import, never one importing the other. Enforce it with a guard.
 
 # Testing
 
-- Default test scope: unit tests for functions and methods. For integration, component or end-to-end tests, ask me which levels to write unless the project's conventions already say. Details: the `test-discipline` skill.
+- Default test scope: unit tests for functions and methods. For integration, component or end-to-end tests, ask me which levels to write unless the project's conventions already say. Details: the `writing-tests` skill.
 
 # Helper agents
 

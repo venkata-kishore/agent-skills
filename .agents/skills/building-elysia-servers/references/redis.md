@@ -30,7 +30,7 @@ Rules:
 
 - Acquire with a TTL so a crashed holder cannot deadlock the key.
 - Event processing claims a mutex per `entityType:entityId`. If acquisition fails, re-queue with backoff instead of blocking.
-- The semaphore guards entry. The DB conditional update (`database-conventions`) is what guarantees a row is processed once. Use both when external side effects are involved.
+- The semaphore guards entry. The DB conditional update (`writing-database-code`) is what guarantees a row is processed once. Use both when external side effects are involved.
 
 ## Rate limiting
 

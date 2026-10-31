@@ -122,7 +122,7 @@ Declare `var cancel context.CancelFunc` outside and assign with `=`.
 - `logger.With("request_id", id)` for repeated attributes.
 - `InfoContext`, `ErrorContext` so a Handler can pull trace IDs from ctx.
 - `LogAttrs` with `slog.String(...)` on hot paths.
-- Log lines never carry secrets, tokens or raw identifiers (`security-baseline`). Implement `LogValuer` to redact.
+- Log lines never carry secrets, tokens or raw identifiers (`securing-applications`). Implement `LogValuer` to redact.
 - `slog.DiscardHandler` (1.24+) in tests. `slog.NewMultiHandler` (1.26+) to fan out.
 - Test custom handlers with `testing/slogtest`.
 

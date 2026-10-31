@@ -70,7 +70,7 @@ func (fn handlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-- Map domain errors to status in one place. Errors that leave the server are generic: never send internal error text, and never put secrets, tokens or raw identifiers in the log line (`security-baseline`).
+- Map domain errors to status in one place. Errors that leave the server are generic: never send internal error text, and never put secrets, tokens or raw identifiers in the log line (`securing-applications`).
 - Always use `r.Context()` downstream. Never `context.Background()` in a handler.
 - Go 1.25+ has `http.CrossOriginProtection` for CSRF via Fetch metadata.
 

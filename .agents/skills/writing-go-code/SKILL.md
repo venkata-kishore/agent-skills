@@ -1,5 +1,5 @@
 ---
-name: go-conventions
+name: writing-go-code
 description: "Use when writing, reviewing, or structuring Go code: error handling, context, goroutines and concurrency, slices and maps, generics, iterators, slog, testing, go.mod and tooling, project layout (cmd/internal), cobra CLIs, net/http servers, pgx + sqlc, migrations, embedding a web UI, Taskfile, GoReleaser, Dockerfiles"
 ---
 
@@ -51,7 +51,7 @@ Logging:
 
 - `log/slog` for all new code. `logger.InfoContext(ctx, "msg", "key", val)`. Odd argument counts are bugs that vet catches.
 - Pass `*slog.Logger` explicitly. slog deliberately rejected logger-in-context. Put request IDs in context and read them in a Handler.
-- Log lines never carry secrets, tokens or raw identifiers. Errors that leave the server are generic (`security-baseline`).
+- Log lines never carry secrets, tokens or raw identifiers. Errors that leave the server are generic (`securing-applications`).
 
 Security, data and dependencies:
 
@@ -64,9 +64,9 @@ Security, data and dependencies:
 
 Sibling skills (follow them, do not restate):
 
-- `test-discipline`: unit tests by default, ask the owner for integration or end-to-end tests, hand-rolled fakes with no mocking library, injected clock, pristine output, bounded waits.
-- `database-conventions`: status values, no CHECK/DEFAULT/triggers, unique-index approval, bigint ids, UTC. Applies to pgx + sqlc and migrations.
-- `security-baseline`: logging and error exposure for slog and net/http.
+- `writing-tests`: unit tests by default, ask the owner for integration or end-to-end tests, hand-rolled fakes with no mocking library, injected clock, pristine output, bounded waits.
+- `writing-database-code`: status values, no CHECK/DEFAULT/triggers, unique-index approval, bigint ids, UTC. Applies to pgx + sqlc and migrations.
+- `securing-applications`: logging and error exposure for slog and net/http.
 
 ## References
 

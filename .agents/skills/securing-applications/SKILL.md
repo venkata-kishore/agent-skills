@@ -1,5 +1,5 @@
 ---
-name: security-baseline
+name: securing-applications
 description: Use when writing or reviewing code that touches authentication, sign-in, sessions, tokens, secrets, logging, audit trails, rate limiting, emailed links, file uploads or downloads, error responses, dependency calls (timeouts, circuit breakers), admin or permission changes, or when asked for a security review or to explain a security claim.
 ---
 

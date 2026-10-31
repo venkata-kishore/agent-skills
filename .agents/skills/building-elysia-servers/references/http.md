@@ -27,7 +27,7 @@ Layer 2, the service: rules a schema cannot express.
 | Authorization context (another user's resource) | Service |
 | External checks | Service |
 
-Never repeat a schema rule in the service. Uniqueness is checked in the service for a friendly answer, but a unique index is only added with owner approval and never backs an upsert (`database-conventions`).
+Never repeat a schema rule in the service. Uniqueness is checked in the service for a friendly answer, but a unique index is only added with owner approval and never backs an upsert (`writing-database-code`).
 
 ## Errors
 
@@ -43,7 +43,7 @@ export function BadRequest(message, errorCode, data) { return new HttpError(400,
 
 Call them without `new`: `throw Conflict("Request conflicts", "THING_CONFLICT")`.
 
-Errors that leave the server are generic and driven by `errorCode` (`security-baseline`). The `error` text is a fixed generic phrase, the client picks its message from `errorCode`, and no error reveals whether an account or record exists. Internals (SQL text, stack, constraint names, provider payloads) go to the log only.
+Errors that leave the server are generic and driven by `errorCode` (`securing-applications`). The `error` text is a fixed generic phrase, the client picks its message from `errorCode`, and no error reveals whether an account or record exists. Internals (SQL text, stack, constraint names, provider payloads) go to the log only.
 
 ### Global handler
 

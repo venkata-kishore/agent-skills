@@ -26,7 +26,7 @@ log.error({ jobId: job?.id, err: err?.message }, "job failed");
 | External calls: payment, email dispatch | Expected validation failures |
 | Unexpected errors with context | Health-check noise |
 
-A security log line may carry only the source IP, user agent, a keyed hash of the attempted identifier and the internal user id. One helper writes all of them. Audit and the rest of the security rules: `security-baseline`.
+A security log line may carry only the source IP, user agent, a keyed hash of the attempted identifier and the internal user id. One helper writes all of them. Audit and the rest of the security rules: `securing-applications`.
 
 ## Environment config
 
@@ -71,4 +71,4 @@ Wrap every call to a dependency (payment provider, email service, any third-part
 
 - Keep DB transactions short and DB-only. No external API call inside a transaction.
 - Log no request or response bodies unless they are known to be safe.
-- Jobs must be idempotent: BullMQ retries failed jobs (`database-conventions`).
+- Jobs must be idempotent: BullMQ retries failed jobs (`writing-database-code`).
