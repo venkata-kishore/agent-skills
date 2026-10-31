@@ -1,13 +1,14 @@
-# Drizzle ORM Query Patterns
+# Drizzle ORM query patterns
 
-Query mechanics for the data layer. See `SKILL.md` for the schema, index, status, constants, ID and mapper rules.
+Checked against Drizzle ORM 1.0.0-rc.5 ([release page](https://github.com/drizzle-team/drizzle-orm/releases/tag/v1.0.0-rc.5)). Query mechanics for the data layer. See `SKILL.md` for the schema, index, status, constants, ID and mapper rules; raw SQL is in `references/raw-sql.md`.
 
-## Default: Use Drizzle's Standard API
+## Default: use Drizzle's standard API
 
 Use Drizzle's query builder as the primary pattern: express everything you can through the ORM and drop to raw SQL only when the builder genuinely cannot do it. It handles selects, inserts, updates, deletes, joins, filtering, ordering, and pagination natively.
 
 ```js
 import { eq, and, gt, sql } from "drizzle-orm";
+import { DateTime } from "luxon";
 import { db } from "../client.js";
 import { things } from "../schema.js";
 import { THING_STATUS } from "@app/shared/constants";
@@ -32,10 +33,11 @@ export async function create(data) {
   return row;
 }
 
+// The driver takes a JS Date, so convert the Luxon value at the boundary.
 export async function updateStatus(id, newStatus) {
   const [row] = await db
     .update(things)
-    .set({ status: newStatus, updatedAt: new Date() })
+    .set({ status: newStatus, updatedAt: DateTime.utc().toJSDate() })
     .where(eq(things.id, id))
     .returning();
   return row;
@@ -55,9 +57,9 @@ export async function findActive(orgId, afterId) {
 }
 ```
 
-## Relations & Relational Queries (v2)
+## Relations and relational queries (v2)
 
-Drizzle's relations and relational query builder are now v2 (shipped with Drizzle ORM v1). Use the v2 conventions. The core `db.select()` builder above is unchanged across versions. This only affects how relations are defined and how related rows are read via `db.query`.
+Relations and the relational query builder are v2 in Drizzle ORM v1. `db._query` (relational queries v1) is removed for Postgres since rc.1. The `db.select()` builder above is unaffected; this only changes how relations are defined and read via `db.query`.
 
 Define all relations in one place with `defineRelations` (replaces the old per-table `relations()`); fields are `from`/`to` (were `fields`/`references`), and the client takes `{ relations }` (was `{ schema }`):
 
@@ -86,9 +88,31 @@ db.query.users.findMany({ where: { id: 1 }, orderBy: { id: "asc" }, with: { post
 
 Many-to-many uses `.through()` on the junction columns, then `with: { groups: true }` in the query.
 
-Reference: [relations v1→v2](https://orm.drizzle.team/docs/relations-v1-v2) and the [v1 beta release notes](https://orm.drizzle.team/docs/latest-releases/drizzle-orm-v1beta2) (which also move RLS to `pgTable.withRLS(...)` and restructure the migrations folder via `drizzle-kit up`).
+Since rc.5, `undefined` in a relational-query `where` throws. When a filter may be absent on purpose, use `EmptyFilter`:
 
-## Client Wiring (v1 Gotcha)
+```js
+import { EmptyFilter } from "drizzle-orm/relations";
+
+db.query.users.findMany({ where: { isActive: params.isActive ?? EmptyFilter } });
+```
+
+An empty relation filter (`where: { posts: {} }`) is skipped. Filter by a relation's presence with `posts: true` and its absence with `posts: false`.
+
+Reference: [relations v1 to v2](https://orm.drizzle.team/docs/relations-v1-v2) and the [rc.5 release page](https://github.com/drizzle-team/drizzle-orm/releases/tag/v1.0.0-rc.5).
+
+## Casing and error params
+
+Column casing is set on the table, view or schema, no longer via `drizzle({ casing })` (removed in rc.1):
+
+```js
+import * as d from "drizzle-orm/pg-core";
+
+export const things = d.snakeCase.table("things", { createdAt: d.timestamp() }); // created_at
+```
+
+`DrizzleQueryError` omits query params by default (rc.5). Keep `paramsInErrors` off: params can carry personal data (see `securing-applications`).
+
+## Client wiring (v1 gotcha)
 
 In v1 (1.0.0-rc and later), `drizzle()` treats its first argument as a config object unless it is a connection string. A pre-built driver client MUST be passed as `{ client }`:
 
@@ -121,9 +145,9 @@ await db.transaction(async (tx) => {
 });
 ```
 
-## Idempotency & Atomic Claims
+## Idempotency and atomic claims
 
-App-layer guarantees, per the no-unique-index-as-upsert policy in `SKILL.md`.
+App-layer guarantees, per the no-unique-index-as-upsert rule in `SKILL.md`.
 
 A bare check-then-insert is unsafe: two concurrent transactions both find nothing and both insert. Take a row lock on the owning row first, so the second transaction waits and then sees the first insert. A guarded update on the owner holds the lock until commit:
 
@@ -131,7 +155,7 @@ A bare check-then-insert is unsafe: two concurrent transactions both find nothin
 await db.transaction(async (tx) => {
   const [owner] = await tx
     .update(users)
-    .set({ updatedAt: new Date() })
+    .set({ updatedAt: DateTime.utc().toJSDate() })
     .where(eq(users.id, userId))
     .returning();
   if (!owner) return null;
@@ -152,68 +176,7 @@ const [claimed] = await tx
 if (!claimed) return; // another worker won
 ```
 
-Event dedup follows the same two patterns (lock or claim). It needs no unique index unless the owner approves one as an integrity constraint; even then the insert is not an upsert.
-
-## Complex Queries (Raw SQL)
-
-Fall back to `db.execute(sql`...`)` only when Drizzle's builder is insufficient: CTEs, window functions, `generate_series`, complex aggregations, dynamic multi-table queries:
-
-```js
-export async function getMonthlyStats(userId) {
-  const { rows } = await db.execute(sql`
-    SELECT TO_CHAR(created_at, 'YYYY-MM') AS month, COUNT(*)::int AS total
-    FROM app.things
-    WHERE user_id = ${userId}
-    GROUP BY month
-    ORDER BY month DESC
-  `);
-  return rows;
-}
-```
-
-Dynamic `WHERE` builder for admin list endpoints with optional filters:
-
-```js
-const conditions = [];
-if (status != null) conditions.push(sql`t.status = ${status}`);
-if (search) conditions.push(sql`t.name ILIKE ${"%" + search + "%"}`);
-const where = conditions.length > 0 ? sql`WHERE ${sql.join(conditions, sql` AND `)}` : sql``;
-```
-
-JSONB merge:
-
-```js
-details: sql`COALESCE(${table.details}, '{}'::jsonb) || ${JSON.stringify(update)}::jsonb`
-```
-
-Partial-update guard for PATCH endpoints:
-
-```js
-export async function updateFields(id, fields) {
-  const updates = {};
-  if (fields.name !== undefined) updates.name = fields.name;
-  if (fields.email !== undefined) updates.email = fields.email;
-  if (Object.keys(updates).length === 0) return null;
-  const [row] = await db
-    .update(table)
-    .set({ ...updates, updatedAt: new Date() })
-    .where(eq(table.id, id))
-    .returning();
-  return row;
-}
-```
-
-### Raw SQL Style
-
-When the builder is insufficient and you hand-write SQL, keep it consistent and bug-resistant:
-
-- UPPERCASE keywords (`SELECT`, `FROM`, `WHERE`); `snake_case` identifiers so you never need to quote them; quote only reserved words or special characters.
-- Keep it multi-line and readable, one clause per line; no run-on single lines.
-- Short, meaningful table aliases (`orders AS o`, not `x` or `temp`); always use `AS` for column aliases.
-- `column IS NULL` / `IS NOT NULL`, never `= NULL`.
-- `WHERE` filters before aggregation; `HAVING` filters after.
-- `COALESCE(col, default)` for defaults instead of a `CASE`; format any `CASE` one branch per line, and prefer a CTE over deeply nested `CASE`.
-- Break long queries into `WITH` CTEs; comment non-obvious logic inline.
+Event dedup follows the same two patterns (lock or claim). It needs no unique index unless the user approves one as an integrity constraint; even then the insert is not an upsert.
 
 ## Key Rules
 
@@ -223,7 +186,7 @@ When the builder is insufficient and you hand-write SQL, keep it consistent and 
 - Keep transactions short and DB-only, no external API calls inside.
 - Pass `tx` through the entire call chain for atomicity.
 - BigInt columns use `{ mode: "string" }`; handle IDs and large integers as strings.
-- Use Luxon `DateTime` for date logic, comparisons, and formatting; avoid native `Date` for business logic.
+- Use Luxon `DateTime` for date logic, comparisons and formatting; where the driver takes a JS `Date`, pass `DateTime.utc().toJSDate()`.
 - Add `.orderBy(...)` whenever order matters: SQL guarantees no row order otherwise, and stable pagination depends on it.
 - Test existence with a `LIMIT 1` row check (`const [row] = await db.select(...).limit(1); return row != null`), never `COUNT(*)`.
 - On wide or hot-path tables, select explicit columns (`db.select({ id: t.id, name: t.name })`) instead of relying on `db.select()` plus a mapper to drop fields.
