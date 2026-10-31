@@ -3,8 +3,8 @@ name: codex
 description: For coding agents other than Codex. Delegate implementation work to OpenAI Codex CLI workers (gpt-6.1-sol, high effort), in parallel git worktrees when the work splits, then review, integrate and verify the result. Use only when the user explicitly asks in chat to use Codex, e.g. "use codex for X" or "have codex do X". Never on your own initiative.
 compatibility: Not for Codex itself; disable it there with a [[skills.config]] entry (enabled = false) in ~/.codex/config.toml. Needs a shell, git, jq and a logged-in Codex CLI. Sends repository content to OpenAI.
 metadata:
-  verified-with: "codex-cli 0.164.0, git 2.52.0"
-  verified-on: "2026-10-29"
+  verified-with: "codex-cli 0.166.0, git 2.52.0"
+  verified-on: "2026-10-31"
 ---
 
 # Codex orchestration
@@ -90,3 +90,15 @@ git -C "$R" apply --check "$W/combined.diff" && git -C "$R" apply "$W/combined.d
 
 1. For every worktree you created, including `integrate`: `git -C "$R" worktree remove --force "$W/wt/<slug>" && git -C "$R" branch -D codex/<slug>`.
 2. Report: what each unit's worker did and what you fixed, any conflicts, and build and test results (with output on failure). Leave the changes uncommitted unless the user asks.
+
+## Brainstorming and planning
+
+When the user wants ideas or a plan and no code changes, skip the worktrees and run one read-only session:
+
+```bash
+codex exec -C "$R" -m gpt-6.1-sol -c 'model_reasoning_effort="high"' -s read-only \
+  -o "$W/last.md" - < "$W/brief.md"
+```
+
+- If `-C` points outside a git repo, add `--skip-git-repo-check`.
+- If the user names a model, check it appears in `~/.codex/models_cache.json` before using it in place of `gpt-6.1-sol`. If it is not listed, ask.
