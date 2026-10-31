@@ -1,9 +1,11 @@
 ---
 name: writing-go-code
-description: "Use when writing, reviewing, or structuring Go code: error handling, context, goroutines and concurrency, slices and maps, generics, iterators, slog, testing, go.mod and tooling, project layout (cmd/internal), cobra CLIs, net/http servers, pgx + sqlc, migrations, embedding a web UI, Taskfile, GoReleaser, Dockerfiles"
+description: "Sets Go conventions for error handling, context, concurrency, generics, iterators, slog, testing, tooling, project layout, cobra CLIs, net/http servers, pgx + sqlc, migrations, embedded web UIs, Taskfile, GoReleaser and Dockerfiles. Use when writing, reviewing, or structuring Go code, or when go.mod, goroutines, slices and maps, or a Go project layout come up."
 ---
 
 # Go Conventions
+
+A project's own conventions override this skill.
 
 Checked against Go 1.27 (current stable). Where the style guides (Effective Go, Code Review Comments, Google, Uber) disagree, this skill picks a default and says so.
 
@@ -59,14 +61,10 @@ Security, data and dependencies:
 - `net.JoinHostPort`, never `fmt.Sprintf("%s:%d")`.
 - `os.OpenRoot` (1.24+) for user-supplied paths.
 - Copy slices and maps at API boundaries. Returning an internal slice leaks aliasing.
-- Dependencies: latest stable, verified against the registry, pinned. Every new dependency needs the owner's approval and a check that the standard library does not already cover it.
+- Dependencies: latest stable, verified against the registry, pinned. Every new dependency needs the user's approval and a check that the standard library does not already cover it.
 - When packages of one layer import each other, move the shared piece into a helper package both import and enforce it with a guard.
 
-Sibling skills (follow them, do not restate):
-
-- `writing-tests`: unit tests by default, ask the owner for integration or end-to-end tests, hand-rolled fakes with no mocking library, injected clock, pristine output, bounded waits.
-- `writing-database-code`: status values, no CHECK/DEFAULT/triggers, unique-index approval, bigint ids, UTC. Applies to pgx + sqlc and migrations.
-- `securing-applications`: logging and error exposure for slog and net/http.
+Sibling skills (follow them, do not restate): `writing-tests`, `writing-database-code`, `securing-applications`.
 
 ## References
 
@@ -77,25 +75,6 @@ Open only the one the task touches.
 - `references/language.md`: version-to-feature table, slices and maps, nil interfaces, shadowing, defer, generics, iterators, strings, time, slog, JSON.
 - `references/testing.md`: test scope and quality bar, table tests, helpers, golden files, fuzzing, benchmarks, lint, pre-finish checklist.
 - `references/layout.md`: module layout, cmd/internal, cobra CLI, net/http server, pgx + sqlc, goose, config, embedding a UI, Taskfile, GoReleaser, Dockerfile.
-
-## Quick reference
-
-| Need | Pattern |
-|---|---|
-| Wrap error | `fmt.Errorf("load %s: %w", name, err)` |
-| Match error | `errors.Is(err, ErrNotFound)`; `e, ok := errors.AsType[*ValidationError](err)` |
-| Aggregate errors | `errors.Join(errs...)` |
-| Run goroutines | `var wg sync.WaitGroup; wg.Go(func(){...}); wg.Wait()` |
-| Fan-out with errors | `g, ctx := errgroup.WithContext(ctx); g.SetLimit(n); g.Go(...); err := g.Wait()` |
-| Cancellable send | `select { case out <- v: case <-ctx.Done(): return ctx.Err() }` |
-| Count loop | `for i := range n {}` |
-| Sorted map keys | `slices.Sorted(maps.Keys(m))` |
-| Split once | `before, after, ok := strings.Cut(s, "=")` |
-| Optional pointer | `Age: new(years)` (1.26+) |
-| Test context | `ctx := t.Context()` (1.24+) |
-| Benchmark loop | `for b.Loop() {}` (1.24+) |
-| Pinned tool | `go get -tool github.com/sqlc-dev/sqlc/cmd/sqlc`; `go tool sqlc generate` |
-| Signal shutdown | `ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM); defer stop()` |
 
 ## Common mistakes
 
@@ -108,4 +87,4 @@ Open only the one the task touches.
 - `append` result not assigned, or two appends from one base slice overwriting each other.
 - `time.After` in a hot loop. Use a reusable `time.NewTimer`.
 - `pkg/` directory, `tools.go` blank-import file, committed `go.work`, local-path `replace`.
-- Matching on JSON error text. `encoding/json` is backed by v2 since 1.27 and messages changed.
+- Matching on JSON error text. `encoding/json` is backed by v2 since 1.27, so error text may differ.

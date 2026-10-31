@@ -128,5 +128,5 @@ Declare `var cancel context.CancelFunc` outside and assign with `=`.
 
 ## JSON
 
-- Since 1.27 `encoding/json` runs on `encoding/json/v2` internals. Error text changed, invalid UTF-8 and duplicate names are stricter in v2 APIs. Never match on JSON error strings.
+- Since 1.27 `encoding/json` runs on `encoding/json/v2` internals. Error text may differ, so never match on error text; invalid UTF-8 and duplicate names are stricter in v2 APIs.
 - Use `encoding/json/v2` directly for new code only when the module's `go` line is 1.27+ and the repo has adopted it.
