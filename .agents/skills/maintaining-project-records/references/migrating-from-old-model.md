@@ -1,4 +1,10 @@
-# Migrating from the old records model
+# Setting up and migrating records
+
+## New repo
+Create the layout from SKILL.md, move existing rules into `.agents/AGENTS.md`, remove `CLAUDE.md`
+where AGENTS.md should be the single entry (see Layout for why), and start sessions at the repo root.
+
+## Migrating from the old records model
 
 Old model: decision table with ids, worklog, history, learnings files, work-item ids. The new
 model replaces it; do not keep both. Do this on its own branch, in one commit per step.
