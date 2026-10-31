@@ -112,7 +112,7 @@ Declare `var cancel context.CancelFunc` outside and assign with `=`.
 ## Time
 
 - `time.Time` for instants, `time.Duration` for spans. Never bare ints. On the wire, put the unit in the name (`TimeoutMillis`) or use RFC 3339.
-- Inject a clock (`now func() time.Time`) or use `synctest`. Never `time.Sleep` in tests.
+- Inject a clock (`now func() time.Time`) or use `synctest`. Never read the wall clock or `time.Sleep` in tests.
 - Reuse `time.NewTimer` with `Reset`/`Stop` instead of `time.After` in loops.
 - `math/rand.Seed` is a no-op since 1.24.
 
@@ -122,7 +122,7 @@ Declare `var cancel context.CancelFunc` outside and assign with `=`.
 - `logger.With("request_id", id)` for repeated attributes.
 - `InfoContext`, `ErrorContext` so a Handler can pull trace IDs from ctx.
 - `LogAttrs` with `slog.String(...)` on hot paths.
-- Implement `LogValuer` to redact secrets.
+- Log lines never carry secrets, tokens or raw identifiers (`security-baseline`). Implement `LogValuer` to redact.
 - `slog.DiscardHandler` (1.24+) in tests. `slog.NewMultiHandler` (1.26+) to fan out.
 - Test custom handlers with `testing/slogtest`.
 

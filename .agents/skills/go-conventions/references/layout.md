@@ -1,6 +1,6 @@
 # Project layout, CLI, server, database, build
 
-These are defaults for a new project. An existing repo's choices win.
+These are defaults for a new project. An existing repo's choices win. Every library named here is an option, not a license to add it: each new dependency needs the owner's approval and a check that the standard library does not already cover it. Use the latest stable version, verified against the registry and pinned.
 
 ## Module layout
 
@@ -16,7 +16,7 @@ Package design:
 
 - Group by domain noun (`internal/card`, `internal/doc`), each owning its types, logic and the small store interface it needs. Adapters (HTTP, Postgres) either inside the domain package when small or in dependency-named packages (`internal/server`, `internal/store`). Pick one and be consistent.
 - Dependencies point inward: server and store depend on domain packages, never the reverse.
-- Break import cycles by defining the interface in the consumer, or by extracting the shared concept into a package with a real noun name. Never into `types` or `common`.
+- When packages of one layer import each other, or an import cycle appears, define the interface in the consumer or move the shared piece into a helper package both import, named for a real noun (never `types` or `common`). Enforce the direction with a guard (depguard, an import-rule Go test).
 - Small sharp packages (`internal/reqctx`, `internal/build`, `internal/config`) instead of one `util`.
 
 Reference tree for a CLI plus server plus web UI:
@@ -129,7 +129,8 @@ Default: pgx v5 via `pgxpool` plus sqlc with `sql_package: "pgx/v5"`. No ORM.
 - sqlc structs never leak into API DTOs. Map in the store or service layer.
 - Translate `pgx.ErrNoRows` to a domain `ErrNotFound` inside the store. Callers never import pgx.
 - Pass `ctx` to every query. Use a transaction helper `func (s *Store) tx(ctx, func(q *sqlcgen.Queries) error) error` that commits or rolls back.
-- Store tests against a real Postgres are integration tests: build-tagged, run on request, transaction-per-test for isolation.
+- Store tests against a real Postgres are integration tests: ask the owner first, then build-tag them and use transaction-per-test for isolation.
+- Schema rules (status values, no CHECK, DEFAULT or triggers, unique-index approval, bigint ids, UTC) are in `database-conventions`.
 
 Migrations: goose with embedded SQL (`//go:embed migrations/*.sql`, `goose.SetBaseFS`). One file per migration with `-- +goose Up` and `-- +goose Down`. Zero-pad versions (`00001_init.sql`) because sqlc reads them lexicographically. Expose `<app>-server migrate up` so self-hosters need no extra tool. In SaaS deploys run migrations as an explicit step, not on every instance boot. Alternatives already in use: tern (pgx-native), golang-migrate (needs paired up/down files).
 
@@ -180,7 +181,7 @@ func FS() (fs.FS, error) { return nil, nil }
 ## Build, release, containers
 
 - Taskfile (`task --list` works for humans and agents). Targets: `generate`, `build`, `test`, `lint`, `dev`, `web:build`. Use `sources:`/`generates:` so unchanged UI builds are skipped. Logic that outgrows YAML moves to a Go program under `scripts/`.
-- Pinned Go tools via `go get -tool ...` and `go tool <name>` (1.24+): sqlc, goose, oapi-codegen, mockery. Air is GPL-3.0 and would enter `go.mod`; use wgo (MIT) for Go live reload. Vite handles frontend HMR.
+- Pinned Go tools via `go get -tool ...` and `go tool <name>` (1.24+): sqlc, goose, oapi-codegen. Air is GPL-3.0 and would enter `go.mod`; use wgo (MIT) for Go live reload. Vite handles frontend HMR.
 - `//go:generate go tool sqlc generate` style directives. `go generate` never runs implicitly; `task generate` calls it.
 - GoReleaser: one build per binary with `ldflags: -s -w -X <module>/internal/build.Version={{.Version}}`, `CGO_ENABLED=0`. The UI build goes in the global `before.hooks`, not build-level hooks, which run once per OS and arch. `brews` is deprecated since v2.10; use `homebrew_casks`, which wants signing or a quarantine workaround. godownloader is archived; hand-write `install.sh` that verifies `checksums.txt`. Also publish deb/rpm via nfpm.
 - Dockerfile: Node stage emits `web/dist`, Go stage builds with `CGO_ENABLED=0 -trimpath -ldflags "-s -w"`, final stage `gcr.io/distroless/static-debian13:nonroot`. JSON-array `ENTRYPOINT`. Pin the Debian suffix.

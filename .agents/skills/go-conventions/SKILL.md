@@ -1,17 +1,15 @@
 ---
 name: go-conventions
-version: 1
 description: Use when writing, reviewing, or structuring Go code: error handling, context, goroutines and concurrency, slices and maps, generics, iterators, slog, testing, go.mod and tooling, project layout (cmd/internal), cobra CLIs, net/http servers, pgx + sqlc, migrations, embedding a web UI, Taskfile, GoReleaser, Dockerfiles
-agents: [main_agent, general_purpose]
 ---
 
 # Go Conventions
 
-Researched against Go 1.27 (stable since 2026-08; Go 1.26 also supported, 1.25 and older unsupported). Sources: Effective Go, Go Code Review Comments, Google Go Style, Uber Go Style, Go blog and release notes, and a survey of well-run Go repos (cli/cli, coder, pocketbase, caddy, river, logchef, temporal cli). Where the guides disagree, this skill picks a default and says so.
+Checked against Go 1.27 (current stable). Where the style guides (Effective Go, Code Review Comments, Google, Uber) disagree, this skill picks a default and says so.
 
 ## Before writing any Go
 
-1. Read `go.mod`. The `go` line gates language semantics and APIs. Do not use a feature newer than it. Table in `language.md`.
+1. Read `go.mod`. The `go` line gates language semantics and APIs. Do not use a feature newer than it. Table in `references/language.md`.
 2. Match the repo. Existing lint config, test style (testify or stdlib), router, DB layer and task runner win over this skill's defaults.
 3. Never emit `?`, `try()`, or `check`/`handle`. The Go team formally declined all error-handling syntax proposals in June 2025. Write explicit `if err != nil { return ..., err }`.
 4. After generating code run `gofmt`, `go vet ./...`, and `go fix ./...` from a clean tree. `go fix` (1.26+) rewrites stale idioms that models keep emitting (`x := x`, manual min/max, `interface{}`, `b.N` loops).
@@ -35,7 +33,7 @@ Interfaces and dependencies:
 - No mutable package-level state. Inject loggers, clocks, config, DB handles through constructors. `init()` only if deterministic and I/O-free.
 - `os.Exit` and `log.Fatal` only in `main`. Put logic in `func run(ctx, args, stdout) error` so defers run and it is testable.
 
-Errors (details in `errors.md`):
+Errors (details in `references/errors.md`):
 
 - Return `error`, never a concrete pointer type. Never return a typed nil pointer as an error.
 - Wrap with `fmt.Errorf("open config: %w", err)`. Context goes first, `%w` last, no "failed to" filler, no repeating what the inner error already says.
@@ -43,7 +41,7 @@ Errors (details in `errors.md`):
 - Handle each error once: return it or log it, not both.
 - Panic only for programmer errors and startup invariants. No blanket `recover`.
 
-Context and concurrency (details in `concurrency.md`):
+Context and concurrency (details in `references/concurrency.md`):
 
 - `ctx context.Context` is the first parameter, named `ctx`. Never stored in a struct. `defer cancel()` right after creating one.
 - Every goroutine has an owner, an exit path and a waiter. Use `wg.Go(f)` (1.25+) or `errgroup`. Every blocking send or receive pairs with `case <-ctx.Done()`.
@@ -53,22 +51,32 @@ Logging:
 
 - `log/slog` for all new code. `logger.InfoContext(ctx, "msg", "key", val)`. Odd argument counts are bugs that vet catches.
 - Pass `*slog.Logger` explicitly. slog deliberately rejected logger-in-context. Put request IDs in context and read them in a Handler.
-- Never log and return the same error.
+- Log lines never carry secrets, tokens or raw identifiers. Errors that leave the server are generic (`security-baseline`).
 
-Security and data:
+Security, data and dependencies:
 
 - `crypto/rand` for tokens and keys (`rand.Text()` on 1.24+). Never `math/rand`.
 - `net.JoinHostPort`, never `fmt.Sprintf("%s:%d")`.
 - `os.OpenRoot` (1.24+) for user-supplied paths.
 - Copy slices and maps at API boundaries. Returning an internal slice leaks aliasing.
+- Dependencies: latest stable, verified against the registry, pinned. Every new dependency needs the owner's approval and a check that the standard library does not already cover it.
+- When packages of one layer import each other, move the shared piece into a helper package both import and enforce it with a guard.
 
-## Supporting references
+Sibling skills (follow them, do not restate):
 
-- `errors.md`: wrapping, sentinels vs typed errors, HTTP handler error pattern, panics.
-- `concurrency.md`: WaitGroup.Go, errgroup, pipelines, select, race detector, synctest.
-- `language.md`: version-to-feature table, slices and maps, nil interfaces, shadowing, defer, generics, iterators, strings, time, slog.
-- `testing.md`: test scope and quality bar, table tests, helpers, golden files, fuzzing, benchmarks, lint and the pre-finish checklist.
-- `layout.md`: module layout, cmd/internal, cobra CLI, net/http server, pgx + sqlc, goose, config, embedding a UI, Taskfile, GoReleaser, Dockerfile.
+- `test-discipline`: unit tests by default, ask the owner for integration or end-to-end tests, hand-rolled fakes with no mocking library, injected clock, pristine output, bounded waits.
+- `database-conventions`: status values, no CHECK/DEFAULT/triggers, unique-index approval, bigint ids, UTC. Applies to pgx + sqlc and migrations.
+- `security-baseline`: logging and error exposure for slog and net/http.
+
+## References
+
+Open only the one the task touches.
+
+- `references/errors.md`: wrapping, sentinels vs typed errors, HTTP handler error pattern, panics, CLI exit codes.
+- `references/concurrency.md`: WaitGroup.Go, errgroup, pipelines, select, leaks, race detector, synctest.
+- `references/language.md`: version-to-feature table, slices and maps, nil interfaces, shadowing, defer, generics, iterators, strings, time, slog, JSON.
+- `references/testing.md`: test scope and quality bar, table tests, helpers, golden files, fuzzing, benchmarks, lint, pre-finish checklist.
+- `references/layout.md`: module layout, cmd/internal, cobra CLI, net/http server, pgx + sqlc, goose, config, embedding a UI, Taskfile, GoReleaser, Dockerfile.
 
 ## Quick reference
 
@@ -91,9 +99,7 @@ Security and data:
 
 ## Common mistakes
 
-- Emitting `?` or `try` error syntax. It does not compile and never will.
 - `errors.As` with a non-pointer target, or `errors.Unwrap` on a joined error (it returns nil; use `Is`/`As`).
-- Returning `*MyError` typed nil through an `error` return, producing a non-nil interface.
 - `defer` inside a loop expecting per-iteration release. Wrap the body in a function.
 - `:=` inside an `if` or `for` shadowing an outer `err` or `ctx`.
 - `wg.Add(1)` inside the goroutine instead of before it. Prefer `wg.Go`.
@@ -101,6 +107,5 @@ Security and data:
 - `m[k].field = v` on a map of structs. Not addressable. Store pointers or reassign.
 - `append` result not assigned, or two appends from one base slice overwriting each other.
 - `time.After` in a hot loop. Use a reusable `time.NewTimer`.
-- Mocking by defining an interface in the producer package and exporting it.
-- `pkg/` directory, `util` package, `tools.go` blank-import file, committed `go.work`, local-path `replace`.
+- `pkg/` directory, `tools.go` blank-import file, committed `go.work`, local-path `replace`.
 - Matching on JSON error text. `encoding/json` is backed by v2 since 1.27 and messages changed.
