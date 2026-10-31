@@ -11,6 +11,7 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 - Keep projects separate. Never mention one project in another project's commits, PR descriptions, docs or code. Context about consumers or related repos is for reasoning only.
 - Terse prompts about work already in progress ("ok what now?", "continue", "check with X") mean: check the current state, report, and carry on. Do not ask for clarification first. A new task that is unclear still gets a question.
 - After an interruption, resume exactly where work stopped. Check which background jobs are still running before restarting any.
+- When a tool refuses a compound command, none of it ran. Re-run the parts separately and check the state.
 - Verify a reason before you give it: read the code path you cite, and measure a claimed risk or cite a source before it steers a decision. If a reason you gave turns out false, say so plainly and re-ask with the corrected facts.
 - Never build features I have not asked for. "No for now" means park it as a todo line.
 - Durable lessons go into the project's conventions file or this file, never only into chat or one agent's private memory. Review agent memory files from time to time; remove duplicates and stale entries.
@@ -37,13 +38,6 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 - Never attribute words to me that I did not say; label generated text as generated.
 - Before I step away, say whether any session needs my input.
 
-# Product judgement
-
-- Design core structures so planned later features fit without a rework; build only the core now and park the rest as todo lines.
-- Surface product gaps with a recommendation instead of deciding them silently. Check whether a feature is a standard requirement or just common in competing tools before recommending it.
-- Use plain, widely used terms in UI and API names. Standards jargon goes in a tooltip; never use a trademark.
-- Defaults: restrictive when a setting is empty or ambiguous (with a visible warning); optional behaviour ships off; admin defaults come with overrides, and the most specific rule wins. Do not merge independent settings into one switch.
-
 # Safety
 
 - Never discard, overwrite, stage, or rewrite unrelated user changes.
@@ -57,23 +51,17 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 - Work on a branch off the main branch. Commit each task when it is done.
 - Push after a sensible chunk of committed work, not after every commit. Pull requests, force pushes and remote branch changes need my go each time.
 - Merges into the main branch are squash merges. Merges between other branches are normal merge commits (`--no-ff`), never a rebase, squash or cherry-pick.
-- Fetch and check every branch, including other developers', before deciding where things stand. Never build on or merge another developer's branch without me.
 - Commit with an explicit pathspec so a shared index cannot leak someone else's staged files into your commit.
 - Commit messages carry no self-attribution trailers.
-- Delete only local branches, and only after `git branch --contains` shows them merged. The exception is a temporary branch a skill created for its own helpers, which that skill removes when it is done. Never delete remote branches; report stale ones.
-- git's stash is shared by every worktree of a repo: in a shared repo, set changes aside as a patch file or a temporary commit, never a bare stash.
-- Restore a file with a path git really resolves (`git show HEAD:./rel/path`) and check the result is not empty.
-- When a tool refuses a compound command, none of it ran. Re-run the parts separately and check the state.
+- Before git work beyond commit, push and merge (judging where branches stand, deleting branches, setting changes aside, restoring files), read `~/.agents/instructions/git.md`.
 
-# Dependencies and environment
+# Dependencies, environment and product
 
 - Latest stable versions only, verified against the package registry (not search results, which can be stale), pinned exactly. Record any exception and its reason.
 - Open-source dependencies only, licence checked. Every new dependency needs my approval; first check whether the standard library or an existing dependency already does the job.
 - No hosted CI: every quality gate runs locally. How to run gates and read their results: the `writing-tests` skill.
-- Do not assume tools I have not installed. Check the machine's existing setup before asking me to act.
-- Use your own dev resources (your own database container or port), not my other projects'. Ask before resetting dev data; a one-time permission does not extend to later resets.
-- Do not run expensive environment steps (image builds) before the work needs them.
-- Before production, breaking changes and rebaselines are fine. Prefer the cleaner design over compatibility shims.
+- Before setting up, resetting or building dev resources (databases, containers, images, tools), read `~/.agents/instructions/environment.md`.
+- Before designing a feature, a setting or a default, read `~/.agents/instructions/product.md`.
 
 # Code
 
