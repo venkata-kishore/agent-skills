@@ -1,15 +1,16 @@
 # Drizzle ORM Query Patterns
 
-Query mechanics for the data layer. See `SKILL.md` for file organization, status conventions, constants, ID strategy, and mappers.
+Query mechanics for the data layer. See `SKILL.md` for the schema, index, status, constants, ID and mapper rules.
 
 ## Default: Use Drizzle's Standard API
 
-Leverage Drizzle's query builder as the primary pattern — express everything you can through the ORM and drop to raw SQL only when the builder genuinely cannot do it. It handles selects, inserts, updates, deletes, joins, filtering, ordering, and pagination natively.
+Use Drizzle's query builder as the primary pattern: express everything you can through the ORM and drop to raw SQL only when the builder genuinely cannot do it. It handles selects, inserts, updates, deletes, joins, filtering, ordering, and pagination natively.
 
 ```js
 import { eq, and, gt, sql } from "drizzle-orm";
 import { db } from "../client.js";
 import { things } from "../schema.js";
+import { THING_STATUS } from "@app/shared/constants";
 
 export async function findById(id) {
   const [row] = await db.select().from(things).where(eq(things.id, id)).limit(1);
@@ -49,14 +50,14 @@ export async function findActive(orgId, afterId) {
   return db
     .select()
     .from(things)
-    .where(and(eq(things.orgId, orgId), eq(things.status, ACTIVE), gt(things.id, afterId)))
+    .where(and(eq(things.orgId, orgId), eq(things.status, THING_STATUS.QUEUED), gt(things.id, afterId)))
     .limit(50);
 }
 ```
 
 ## Relations & Relational Queries (v2)
 
-Drizzle's relations and relational query builder are now v2 (shipped with Drizzle ORM v1). Use the v2 conventions. The core `db.select()` builder above is unchanged across versions — this only affects how relations are defined and how related rows are read via `db.query`.
+Drizzle's relations and relational query builder are now v2 (shipped with Drizzle ORM v1). Use the v2 conventions. The core `db.select()` builder above is unchanged across versions. This only affects how relations are defined and how related rows are read via `db.query`.
 
 Define all relations in one place with `defineRelations` (replaces the old per-table `relations()`); fields are `from`/`to` (were `fields`/`references`), and the client takes `{ relations }` (was `{ schema }`):
 
@@ -74,7 +75,7 @@ export const relations = defineRelations(schema, (r) => ({
 const db = drizzle(url, { relations });
 ```
 
-Read related rows with `db.query` using object syntax — not the v1 callback form:
+Read related rows with `db.query` using object syntax, not the v1 callback form:
 
 ```js
 // v2
@@ -95,17 +96,17 @@ In v1 (1.0.0-rc and later), `drizzle()` treats its first argument as a config ob
 const sql = postgres(env.DATABASE_URL, { prepare: false });
 
 const db = drizzle({ client: sql, relations }); // correct
-const db = drizzle(url, { relations });         // also fine — a string is detected as a URL
-const db = drizzle(sql, { relations });         // TRAP — see below
+const db = drizzle(url, { relations });         // also fine: a string is detected as a URL
+const db = drizzle(sql, { relations });         // TRAP: see below
 ```
 
-The legacy positional form `drizzle(sql, { relations })` fails silently: the client instance is destructured as if it were config, `client`/`connection` come out `undefined`, and drizzle constructs a brand-new default client pointing at **localhost:5432** — ignoring both your real client and your `relations`.
+The legacy positional form `drizzle(sql, { relations })` fails silently: the client instance is destructured as if it were config, `client`/`connection` come out `undefined`, and drizzle constructs a brand-new default client pointing at **localhost:5432**: ignoring both your real client and your `relations`.
 
-Diagnostic signature: every runtime query fails with `CONNECT_TIMEOUT ["localhost"]:5432` while the env URL is correct, a raw driver client connects fine, and migrations succeed (migrate scripts are often already on the `{ client }` form — that asymmetry is the tell). Do not chase network, DNS, or env loading — inspect the `drizzle()` call site first and confirm with `db.$client === sql` (or check `db.$client.options.host`).
+Diagnostic signature: every runtime query fails with `CONNECT_TIMEOUT ["localhost"]:5432` while the env URL is correct, a raw driver client connects fine, and migrations succeed (migrate scripts are often already on the `{ client }` form: that asymmetry is the tell). Do not chase network, DNS, or env loading: inspect the `drizzle()` call site first and confirm with `db.$client === sql` (or check `db.$client.options.host`).
 
 ## Transactions
 
-Optional transaction parameter pattern — every query function that may participate in a transaction accepts `tx = db`:
+Optional transaction parameter pattern: every query function that may participate in a transaction accepts `tx = db`:
 
 ```js
 export async function createItem(data, tx = db) {
@@ -122,38 +123,40 @@ await db.transaction(async (tx) => {
 
 ## Idempotency & Atomic Claims
 
-App-layer guarantees, per the no-FK / no-unique-index policy in `SKILL.md`.
+App-layer guarantees, per the no-unique-index-as-upsert policy in `SKILL.md`.
 
-Check-then-insert inside a transaction for business idempotency:
+A bare check-then-insert is unsafe: two concurrent transactions both find nothing and both insert. Take a row lock on the owning row first, so the second transaction waits and then sees the first insert. A guarded update on the owner holds the lock until commit:
 
 ```js
 await db.transaction(async (tx) => {
+  const [owner] = await tx
+    .update(users)
+    .set({ updatedAt: new Date() })
+    .where(eq(users.id, userId))
+    .returning();
+  if (!owner) return null;
   const existing = await findByUserAndPlan(userId, planId, tx);
   if (existing) return existing;
   return await createSubscription({ userId, planId }, tx);
 });
 ```
 
-Atomic claim via conditional update so two workers can't pick the same row — a returned row means the claim was won:
+Atomic claim via conditional update so two workers can't pick the same row. A returned row means the claim was won:
 
 ```js
 const [claimed] = await tx
   .update(jobs)
   .set({ status: JOB_STATUS.PROCESSING })
-  .where(and(eq(jobs.id, id), eq(jobs.status, JOB_STATUS.PENDING)))
+  .where(and(eq(jobs.id, id), eq(jobs.status, JOB_STATUS.QUEUED)))
   .returning();
 if (!claimed) return; // another worker won
 ```
 
-Event-dedup inserts — the one sanctioned unique target (e.g. webhook events keyed by provider + event id):
-
-```js
-await db.insert(events).values(evt).onConflictDoNothing({ target: [events.provider, events.eventId] });
-```
+Event dedup follows the same two patterns (lock or claim). It needs no unique index unless the owner approves one as an integrity constraint; even then the insert is not an upsert.
 
 ## Complex Queries (Raw SQL)
 
-Fall back to `db.execute(sql`...`)` only when Drizzle's builder is insufficient — CTEs, window functions, `generate_series`, complex aggregations, dynamic multi-table queries:
+Fall back to `db.execute(sql`...`)` only when Drizzle's builder is insufficient: CTEs, window functions, `generate_series`, complex aggregations, dynamic multi-table queries:
 
 ```js
 export async function getMonthlyStats(userId) {
@@ -204,10 +207,10 @@ export async function updateFields(id, fields) {
 
 When the builder is insufficient and you hand-write SQL, keep it consistent and bug-resistant:
 
-- UPPERCASE keywords (`SELECT`, `FROM`, `WHERE`); `snake_case` identifiers so you never need to quote them — quote only reserved words or special characters.
+- UPPERCASE keywords (`SELECT`, `FROM`, `WHERE`); `snake_case` identifiers so you never need to quote them; quote only reserved words or special characters.
 - Keep it multi-line and readable, one clause per line; no run-on single lines.
 - Short, meaningful table aliases (`orders AS o`, not `x` or `temp`); always use `AS` for column aliases.
-- `column IS NULL` / `IS NOT NULL` — never `= NULL`.
+- `column IS NULL` / `IS NOT NULL`, never `= NULL`.
 - `WHERE` filters before aggregation; `HAVING` filters after.
 - `COALESCE(col, default)` for defaults instead of a `CASE`; format any `CASE` one branch per line, and prefer a CTE over deeply nested `CASE`.
 - Break long queries into `WITH` CTEs; comment non-obvious logic inline.
@@ -217,10 +220,10 @@ When the builder is insufficient and you hand-write SQL, keep it consistent and 
 - v1 `drizzle()` takes a config object: pass a pre-built client as `drizzle({ client })`. Positional `drizzle(client, ...)` silently connects to localhost:5432 (see Client Wiring).
 - Always use `.returning()` on insert/update/delete.
 - Single-record queries destructure `const [row]` and return `row ?? null`.
-- Keep transactions short and DB-only — no external API calls inside.
+- Keep transactions short and DB-only, no external API calls inside.
 - Pass `tx` through the entire call chain for atomicity.
 - BigInt columns use `{ mode: "string" }`; handle IDs and large integers as strings.
 - Use Luxon `DateTime` for date logic, comparisons, and formatting; avoid native `Date` for business logic.
-- Add `.orderBy(...)` whenever order matters — SQL guarantees no row order otherwise, and stable pagination depends on it.
+- Add `.orderBy(...)` whenever order matters: SQL guarantees no row order otherwise, and stable pagination depends on it.
 - Test existence with a `LIMIT 1` row check (`const [row] = await db.select(...).limit(1); return row != null`), never `COUNT(*)`.
 - On wide or hot-path tables, select explicit columns (`db.select({ id: t.id, name: t.name })`) instead of relying on `db.select()` plus a mapper to drop fields.

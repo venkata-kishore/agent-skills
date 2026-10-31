@@ -1,207 +1,125 @@
 ---
 name: database-conventions
-version: 2
-description: Use when writing or reviewing database code — Drizzle ORM queries, transactions, raw SQL, migrations, schema design, foreign keys, idempotent writes, status conventions, shared constants/enums, ID generation, or DB-to-API mappers
-agents: [main_agent, general_purpose]
+description: Use when writing or reviewing database code, schema design, migrations, indexes, unique constraints, status or enum columns, ID generation, idempotent writes, transactions, JSON columns, raw SQL, shared constants, or DB-to-API mappers. Any SQL database (PostgreSQL assumed where it matters); Drizzle ORM and PostgreSQL specifics are in references.
 ---
 
 # Database Conventions
 
-Data-layer conventions for the backend: query organization, status semantics, shared constants, ID strategy, and mapping DB rows to API responses.
+Data-layer rules: schema, indexes, statuses, constants, IDs, migrations, mappers. Any SQL database; PostgreSQL is assumed where it matters.
 
-## File Organization
+## References
 
-One file per entity in a shared queries directory: `<entity>.queries.js`. Each exports named async functions.
+- `references/drizzle.md`: open when the project uses Drizzle ORM (query builder, relations v2, client wiring, transactions, raw SQL, key rules).
+- `references/postgres.md`: open when creating a PostgreSQL database or cluster, choosing collation, or reasoning about transaction isolation.
 
-Feature modules keep route/service/schema files under `modules/<feature>/`; database access belongs in shared query files only when the feature needs persistence.
+## Organization
 
-## Schema Design
+One file per entity in a shared queries directory: `<entity>.queries.js`, each exporting named async functions. Feature modules keep route, service and schema files under `modules/<feature>/`; database access goes in the shared query files.
 
-Design columns for cheap querying and indexing, not just storage.
+## Schema
 
-- **Enums and statuses are integers, never text.** Map every fixed set of states to numbers and store the smallest type that fits the cardinality — Postgres `smallint` (MySQL `tinyint`) holds far more states than any enum needs. Text values waste space, bloat indexes, and make range/ordering queries awkward.
-- **Number states in a meaningful order** so comparisons and sorts are queryable. Follow the negative/zero/positive scheme (see Status Conventions): terminal states negative and ordered by severity (`marked_for_delete: -1`, `deleted: -2`), neutral/initial at `0` (`draft`), active states positive and ordered by liveness (`inactive: 6`, `pending_approval: 7`, `active: 10`). This keeps `status > 0`, `status < 0`, and `ORDER BY status` direct and index-friendly.
-- **Don't over-normalize small, static data.** Reference sets that are tiny (a handful of rows) and effectively fixed — roles, tiers, statuses, types — can live in code as shared constants/enums instead of a lookup table (see Constants & Shared Enums). Promote to a table only when the set grows, changes at runtime, or the user asks for it.
-- **Default ID and count columns to `bigint`** (always `{ mode: "string" }` in JS — bigint exceeds JS number precision, though it maps one-to-one to `long` in most other languages). Right-size down to `int`/`smallint` only when a table is provably bounded — tiny lookups, fixed reference sets. See ID Generation.
-- **No foreign key constraints by default.** House convention for high-performance Postgres: the app layer owns referential integrity — services validate references and delete/update related rows inside the same transaction boundary, so FK checks would only add write-time overhead and lock contention. Add FK constraints only when the user explicitly asks for them.
-- **No unique indexes for idempotency.** "Only once" guarantees are app-level: check-then-insert inside a transaction (see `drizzle.md`). Exception: append-only event-dedup tables (e.g. webhook events keyed by provider + event id) may carry a unique target for `ON CONFLICT DO NOTHING` inserts.
-- **Keep queryable data in real columns, not JSON.** Treat `jsonb` columns as opaque blobs read and written as a whole (settings, metadata, snapshots, external payloads). Any field you filter, join, sort, or index on belongs in its own column — querying inside JSON means fetching the blob and digging into it per row. Postgres `jsonb` *can* be indexed (GIN, or an expression index on `data->>'field'`) when you genuinely must query a path, but reach for a promoted column first.
+- **Known-value fields are small-integer codes, never text.** Use the smallest type that fits (`smallint`). Number codes without gaps. Emit them to the frontend as generated constants.
+- **Bigint ids everywhere**, serialised as strings for JavaScript (bigint exceeds JS number precision). Counts and other numeric columns may be right-sized.
+- **Keep the schema simple.** Fewer tables; a column instead of a side table where queries allow. Split only when a query needs it. Separate preferences (visible to everyone) from settings (access-controlled).
+- **Small static sets live in code** as shared constants, not a lookup table, until the set grows or changes at runtime.
+- **No foreign keys by default.** The app layer owns referential integrity and writes related rows in one transaction. Add FKs only when the owner asks.
+- **No CHECK constraints, no DEFAULT clauses except `created_at`, no triggers.** Rules live in code with tests. An exception needs the owner's explicit approval.
+- **Real columns for anything queried.** Filter, join, sort or index fields are columns, not JSON keys.
+- **JSON columns** (`jsonb`) are nullable with no default and read and written as a whole. Stored keys are short, declared as constants, with a comment explaining the abbreviations. API bodies keep full names.
+- **Canonicalise at write** (lower-case emails and hostnames) so lookups use plain equality and plain indexes, not case-insensitive collations or `lower()` in queries.
+- **Text limits** count characters: 2,000 by default, smaller for short fields, 5,000 for bodies, unless decided otherwise.
+- **Time is UTC.** Servers and database run in UTC; set the process default zone at boot before anything else initialises.
+- **Sort order** for typed names is deterministic: code-point order unless the owner asks for linguistic order. Record the choice.
+- **Archive instead of deleting reference data.** Archiving blocks new use; in-flight work runs to completion.
 
-## Supporting References
+## Indexes and Uniqueness
 
-- Use `drizzle.md` for Drizzle ORM query mechanics — the standard query builder, transactions, raw SQL, dynamic `WHERE`, JSONB merge, partial-update guards, and key rules.
+- No index until a named query needs it. Name that query when you add the index.
+- Prefer one composite index over a single-column index with the same leading column.
+- Every new unique index needs the owner's approval, including event-dedup tables.
+- A unique index is an integrity constraint, never the basis of an upsert. Do not use `ON CONFLICT` to get idempotency.
 
-## Migrations
+## Idempotent Writes
 
-Determine the migration mode before touching anything — the two modes are handled very differently. Check for a migrations directory, `drizzle.config.*`, and package scripts first.
+Every job and write path is safe to repeat: separate a side effect from recording it, skip settled rows, re-check the condition inside the guarded `UPDATE`, treat an already-missing object as done.
 
-| Mode | Source of truth | Workflow |
-|------|-----------------|----------|
-| Tool-managed | Drizzle schema file | Edit schema → `drizzle-kit generate` → tooling applies; never hand-edit generated SQL |
-| Manual SQL | Hand-numbered SQL files | Write `00N_name.sql` and update the schema file in the same change; a human applies it |
+Check-then-insert is not safe alone: two concurrent transactions can both see nothing and both insert. Serialise first, either by locking the owning row (a guarded update or `SELECT ... FOR UPDATE`) before the check, or by claiming with a conditional `UPDATE ... WHERE status = <expected>` and treating a returned row as a won claim. Example in `references/drizzle.md`.
 
-Both modes:
+## Tenancy
 
-- Write idempotent DDL wherever possible (`IF NOT EXISTS` / `IF EXISTS`, guarded seed inserts) so a re-run neither fails nor duplicates.
-- Seed data lives in its own numbered seed migration, never ad-hoc inserts.
-- The schema file and the applied SQL never drift — same change, same review.
+Anything that runs outside a web request (jobs, workflows, queues, object keys, exports, log lines) carries the tenant id with every entity id. Never encode a location (shard, region, database) in an id. Worker ids are unique across every instance in every region.
 
-Manual-mode discipline:
+Tenancy without row-level security: one scoped data-access gateway, and every mutation writes exactly one audit row in the same transaction.
 
-- Apply with a fail-fast flag: `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/00N_name.sql` — plain `psql -f` exits 0 even when statements fail.
-- DDL runs as the table-owner role; the app runtime role carries DML grants only.
-- Confirm with the user before destructive schema changes.
+## Status Codes
 
-## Status Conventions
+One convention across every table:
 
-All status integers follow a negative/zero/positive semantic:
+| Code | Meaning |
+|------|---------|
+| `0` | base marker (row exists, nothing else known) |
+| `1` | draft |
+| `2` | ended normally |
+| `3` | archived |
+| `> 3` | live states, ordered by liveness |
+| `< 0` | removable without real loss |
 
-| Range | Meaning | Examples |
-|-------|---------|---------|
-| Negative (< 0) | Terminal / dead / blocked | `DELETED: -10`, `CANCELLED: -5`, `SUSPENDED: -3` |
-| Zero | Neutral / created / pending | `CREATED: 0`, `PENDING: 0`, `DRAFT: 0` |
-| Positive (> 0) | Alive / active / progressing | `ACTIVE: 10`, `PAST_DUE: 5`, `FUTURE_CANCEL: 7` |
+Documented exceptions only. Range checks work directly: `status > 3` is live, `status < 0` is removable, `ORDER BY status` follows the lifecycle.
 
-Use range checks where appropriate:
+## Constants
 
-- `status > 0` → entity is alive / has access.
-- `status < 0` → entity is terminated.
-- `status === 0` → entity is in initial/pending state.
-
-Keep the magnitudes ordered as you add new statuses — the ordering is what makes range filters and `ORDER BY status` direct and index-friendly.
-
-## Constants & Shared Enums
-
-Constants live in a shared package importable by both frontend and backend:
-
-```text
-common/src/constants/
-  statuses.js
-  roles.js
-  tiers.js
-  billing-cycles.js
-  tokens.js
-```
-
-Simple numeric enums:
+Constants live in a shared package imported by backend and frontend. Never hardcode magic numbers.
 
 ```js
-export const SUBSCRIPTION_STATUS = Object.freeze({
-  EXPIRED: -10,
-  CANCELLED: -5,
-  CREATED: 0,
-  PAUSED: 4,
-  PAST_DUE: 5,
-  ACTIVE: 10,
+export const JOB_STATUS = Object.freeze({
+  DISCARDED: -1,
+  BASE: 0,
+  DRAFT: 1,
+  DONE: 2,
+  ARCHIVED: 3,
+  QUEUED: 4,
+  PROCESSING: 5,
 });
 ```
 
-Rich descriptors carry `id` and `label`:
-
-```js
-class UserRole {
-  constructor(id, label) {
-    this.id = id;
-    this.label = label;
-    Object.freeze(this);
-  }
-
-  toString() {
-    return this.label;
-  }
-}
-
-export const ROLES = Object.freeze({
-  SUPER_ADMIN: new UserRole(1, "Super Admin"),
-  MEMBER: new UserRole(20, "Member"),
-});
-```
-
-Usage: `ROLES.MEMBER.id` for DB storage, `ROLES.MEMBER.label` for display.
-
-Import convention:
-
-```js
-import { SUBSCRIPTION_STATUS, ROLES } from "@pkg/common";
-```
-
-Never hardcode magic numbers — always reference the constant.
+Rich descriptors (roles, tiers) carry `id` and `label` in a frozen object: `ROLES.MEMBER.id` for storage, `.label` for display.
 
 ## ID Generation
 
-Choose an ID strategy based on app scale and requirements.
+Choose by scale. Snowflake-style ids suit high-traffic tables: upper bits are milliseconds since a custom epoch, lower bits a counter (Redis `INCR` with local fallback), stored as `bigint`. Small reference tables may use identity columns. Pre-generate ids when several tables in one transaction must reference them.
 
-One approach: snowflake-style IDs for high-traffic tables such as users, subscriptions, and orders:
+## Migrations
 
-- Upper bits = milliseconds since a custom epoch.
-- Lower bits = atomic counter using Redis `INCR` with local fallback.
-- Result is time-sortable, unique across instances, and stored as `bigint` with `{ mode: "string" }`.
+Determine the mode first (migrations directory, ORM config, package scripts).
 
-For small reference tables such as plans, subjects, and roles, use Postgres auto-increment identity columns.
+| Mode | Source of truth | Workflow |
+|------|-----------------|----------|
+| Tool-managed | ORM schema file | Edit schema, run the generator, tooling applies; never hand-edit generated SQL |
+| Manual SQL | Numbered SQL files | Write `00N_name.sql` and update the schema file in the same change; a human applies it |
 
-Default ID columns to `bigint` (and always for snowflake IDs). Drop to `int`/`smallint` only for provably bounded tables — tiny lookups, fixed reference sets — never as a squeeze on a table that could grow.
+- Write idempotent DDL (`IF NOT EXISTS` / `IF EXISTS`, guarded seed inserts). Seed data lives in its own numbered migration.
+- Pre-production, migrations carry schema only, never data fixes. A column drop or rename happens through a rebaseline the owner decides; dev databases are recreated afterwards.
+- Keep one golden copy of the complete current schema (tables and indexes only) beside the migrations. Update it in the same commit as every migration and add a drift check.
+- Manual mode: apply with a fail-fast flag (`psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f ...`, since plain `psql -f` exits 0 on failed statements). DDL runs as the table owner; the runtime role gets DML grants only. Confirm destructive changes with the owner.
 
-Pre-generate IDs before insert when the ID must be referenced within the same transaction across multiple tables.
+## Transactions
 
-## Mappers (DB → API Response)
+- One transaction does not make two reads agree under read-committed isolation (each statement has its own snapshot). When you need "stored but unreadable" versus "absent", get both from one statement.
+- A "write only if changed" helper must not return null: the write has committed by then, so null turns a committed change into a server error. Return the row or a result object.
+- Keep transactions short and database-only; no external calls inside.
 
-Transform DB row shapes into API-safe response objects. Locate mappers in `lib/mappers.js`.
+## Mappers (DB to API)
 
-```js
-export function mapUserToProfile(user, security = null) {
-  if (!user) return null;
-  return {
-    id: user.id,
-    email: user.email,
-    fullName: user.fullName,
-    roleId: user.roleId,
-    status: user.status,
-    createdAt: user.createdAt,
-    hasPassword: security ? !!security.passwordHash : undefined,
-    hasGoogle: security ? !!security.googleSsoId : undefined,
-  };
-}
-```
-
-Conventions:
-
-- Name mappers `mapXToY`.
-- Return `null` if input is null.
-- Use boolean presence-check fields from companion rows; set `undefined` to omit from JSON when unavailable.
-- Use mappers in route handlers: `return { user: mapUserToProfile(row, secRow) }`.
-- Keep DB internals, password hashes, and internal flags out of API responses.
-
-## Quick Reference
-
-| Need | Pattern |
-|------|---------|
-| New entity queries | Add `<entity>.queries.js` with named async functions in the shared DB package |
-| DB single row | `const [row] = await db.select()...limit(1)`; return `row ?? null` |
-| Insert/update/delete | Always end with `.returning()` |
-| DB transaction | Pass `tx` parameter through query calls; `await db.transaction(async (tx) => ...)` |
-| Status value | Reference a shared constant; negative = terminal, 0 = pending, positive = active |
-| Enum/status column | Numeric `smallint`, ordered (negative terminal → positive active), never text |
-| ID column type | `bigint` default; `int`/`smallint` only for provably bounded lookup tables |
-| Query a field | Real column, not a field buried inside a `jsonb` blob |
-| Small static set | Keep in code as constants; add a lookup table only when it grows or changes |
-| BigInt IDs | Use `{ mode: "string" }` and handle as strings |
-| DB → API shape | Map rows with `mapXToY` before returning |
-| Migration | Determine mode first: tool-managed (drizzle-kit) vs manual numbered SQL |
-| Idempotent write | Check-then-insert inside a transaction — not a unique index |
-| Claim a row | Conditional update `WHERE status = <expected>` + `.returning()`; a returned row = claim won |
-| FK constraints | Skip by default — app layer owns integrity; add only when explicitly requested |
+Put mappers in `lib/mappers.js`, named `mapXToY`. Return `null` for null input. Use boolean presence fields from companion rows (`undefined` omits them from JSON). Keep hashes and internal flags out of responses.
 
 ## Common Mistakes
 
-- Forgetting `.returning()` on insert/update/delete queries.
-- Not passing `tx` through transaction call chains.
-- Calling external APIs inside DB transactions.
-- Hardcoding magic numbers instead of referencing shared constants.
-- Returning raw DB rows (with internal flags or password hashes) instead of mapping them.
-- Storing enums or statuses as text instead of ordered integers.
-- Putting queryable or filterable fields inside a `jsonb` blob instead of their own columns.
-- Creating a lookup table for a handful of fixed records that belong in code.
-- Dropping to raw SQL when the Drizzle builder would do the job.
-- Adding FK constraints or idempotency unique indexes unprompted — integrity and dedup are app-layer by convention.
-- Applying manual SQL migrations without `-v ON_ERROR_STOP=1`, or running DDL as the app runtime role instead of the table owner.
-- Assuming the migration mode instead of checking whether the project is tool-managed or manual SQL.
+- Text enums or statuses; status values off the shared convention.
+- Hardcoded magic numbers.
+- Upserts or `ON CONFLICT` standing in for idempotency; unapproved unique indexes.
+- CHECK, DEFAULT (other than `created_at`), triggers or FKs added unprompted.
+- Single-column index duplicating a composite's leading column; indexes with no named query.
+- Queryable fields inside JSON.
+- Check-then-insert with no lock or guarded update.
+- Returning raw rows instead of mapping them.
+- Assuming the migration mode.
