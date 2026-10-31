@@ -1,6 +1,6 @@
 ---
 name: go-conventions
-description: Use when writing, reviewing, or structuring Go code: error handling, context, goroutines and concurrency, slices and maps, generics, iterators, slog, testing, go.mod and tooling, project layout (cmd/internal), cobra CLIs, net/http servers, pgx + sqlc, migrations, embedding a web UI, Taskfile, GoReleaser, Dockerfiles
+description: "Use when writing, reviewing, or structuring Go code: error handling, context, goroutines and concurrency, slices and maps, generics, iterators, slog, testing, go.mod and tooling, project layout (cmd/internal), cobra CLIs, net/http servers, pgx + sqlc, migrations, embedding a web UI, Taskfile, GoReleaser, Dockerfiles"
 ---
 
 # Go Conventions

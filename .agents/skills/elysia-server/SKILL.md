@@ -1,6 +1,6 @@
 ---
 name: elysia-server
-description: Use when building, modifying or reviewing Elysia backend code on Bun: routes, services, TypeBox schemas, error handling, auth guards, bitmask RBAC, response shapes, rate limiting, logging, env config, Redis/Valkey, BullMQ queues and workers, payment providers and webhooks, or adding a new module.
+description: "Use when building, modifying or reviewing Elysia backend code on Bun: routes, services, TypeBox schemas, error handling, auth guards, bitmask RBAC, response shapes, rate limiting, logging, env config, Redis/Valkey, BullMQ queues and workers, payment providers and webhooks, or adding a new module."
 ---
 
 # Elysia Server
