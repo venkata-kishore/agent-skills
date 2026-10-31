@@ -1,0 +1,5 @@
+# JVM test notes
+
+- JUnit Jupiter default timeouts (`junit.jupiter.execution.timeout.default` and the narrower properties) cover testable and lifecycle methods. With the default same-thread mode, another thread calls `Thread.interrupt()` on the test thread when time runs out. A value without a unit suffix is read as seconds.
+- An interrupt does not unblock a thread inside a blocking socket read, which is where a database driver waits on the server. The per-test timeout then cannot end a test stuck on a database lock until the lock frees. Bound lock waits on the database side as well (see `postgresql.md`), well under the test timeout.
+- A static initialiser that throws leaves the class unusable. The first use raises `ExceptionInInitializerError`; every later use raises `NoClassDefFoundError: Could not initialize class ...` with no cause. So when a timeout fires while a shared container starts in a static field, the whole module fails with "class not found" errors. Start shared containers once, before any timed method (for example in a launcher session listener), and read the first error in the log, not the later ones.
