@@ -91,7 +91,7 @@ case <-ctx.Done():
 - A goroutine blocked forever is never collected and pins its stack and heap.
 - Every `go` statement needs: an exit condition (ctx, closed channel, done signal) and something that waits for it. No fire-and-forget.
 - Go 1.27 ships `/debug/pprof/goroutineleak` for production diagnosis.
-- In tests, `go.uber.org/goleak` or `testing/synctest` (a deadlocked bubble fails the test).
+- In tests, use `testing/synctest`: a goroutine still blocked when the bubble ends fails the test. No third-party leak checker.
 
 ## Race detector
 
