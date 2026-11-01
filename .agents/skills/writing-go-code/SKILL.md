@@ -5,6 +5,8 @@ description: "Sets Go conventions for error handling, context, concurrency, gene
 
 # Go Conventions
 
+Backend rules for any language: `building-backends`. This skill adds the Go mechanics.
+
 Checked against Go 1.27 (current stable). Where the style guides (Effective Go, Code Review Comments, Google, Uber) disagree, this skill picks a default and says so.
 
 ## Before writing any Go
@@ -30,7 +32,7 @@ Interfaces and dependencies:
 - Define interfaces in the consuming package. Producers return concrete types. Do not pre-build interfaces for mocking.
 - Keep interfaces at one or two methods. Compile-time guard when it matters: `var _ http.Handler = (*Server)(nil)`.
 - Embed interfaces freely. Avoid embedding concrete types in exported structs (Uber position; chosen over Effective Go).
-- No mutable package-level state. Inject loggers, clocks, config, DB handles through constructors. `init()` only if deterministic and I/O-free.
+- Inject loggers, clocks, config and DB handles through constructors, with no mutable package-level state (`building-backends`). `init()` only if deterministic and I/O-free.
 - `os.Exit` and `log.Fatal` only in `main`. Put logic in `func run(ctx, args, stdout) error` so defers run and it is testable.
 
 Errors (details in `references/errors.md`):
@@ -38,7 +40,6 @@ Errors (details in `references/errors.md`):
 - Return `error`, never a concrete pointer type. Never return a typed nil pointer as an error.
 - Wrap with `fmt.Errorf("open config: %w", err)`. Context goes first, `%w` last, no "failed to" filler, no repeating what the inner error already says.
 - Compare with `errors.Is`, extract with `errors.AsType[E]` (1.26+) or `errors.As`. Never compare error strings.
-- Handle each error once: return it or log it, not both.
 - Panic only for programmer errors and startup invariants. No blanket `recover`.
 
 Context and concurrency (details in `references/concurrency.md`):
@@ -61,13 +62,13 @@ Security, data and dependencies:
 - Copy slices and maps at API boundaries. Returning an internal slice leaks aliasing.
 - Dependencies: latest stable, verified against the registry, pinned. Every new dependency needs the user's approval and a check that the standard library does not already cover it.
 
-Sibling skills (follow them, do not restate): `building-backends` (layers, shared code, one owner per rule), `writing-tests`, `writing-database-code`, `securing-applications`.
+Sibling skills (follow them, do not restate): `building-backends` (layers, validation, error codes, permissions, package layout, jobs, one owner per rule), `writing-tests`, `writing-database-code`, `securing-applications`.
 
 ## References
 
 Open only the one the task touches.
 
-- `references/errors.md`: wrapping, sentinels vs typed errors, HTTP handler error pattern, panics, CLI exit codes.
+- `references/errors.md`: wrapping, sentinels vs typed errors, the net/http handler adapter, panics, CLI exit codes.
 - `references/concurrency.md`: WaitGroup.Go, errgroup, pipelines, select, leaks, race detector, synctest.
 - `references/language.md`: version-to-feature table, slices and maps, nil interfaces, shadowing, defer, generics, iterators, strings, time, slog, JSON.
 - `references/testing.md`: test scope and quality bar, table tests, helpers, golden files, fuzzing, benchmarks, lint, pre-finish checklist.

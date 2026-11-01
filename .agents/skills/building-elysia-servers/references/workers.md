@@ -1,5 +1,7 @@
 # Background workers and queues
 
+Rules (side effects via queue from the service, idempotent jobs, workers never import the server package): `building-backends`. This file holds the BullMQ mechanics.
+
 ## Architecture
 
 ```text
@@ -26,10 +28,7 @@ export const queueB = new Queue("queue-b", defaultOpts);
 
 ### Retry policy
 
-Declare it at queue creation.
-
-- Jobs with a user-visible or external effect (email, notifications, payment follow-ups): retries with exponential backoff.
-- Idempotent sweeps and scheduled jobs: one attempt. The next scheduled run is the retry.
+Declare it at queue creation (which jobs retry: `building-backends`).
 
 ```js
 export const queueA = new Queue("queue-a", {
@@ -40,7 +39,7 @@ export const queueA = new Queue("queue-a", {
 
 ## Dispatching
 
-Services add jobs, never routes.
+Services add jobs.
 
 ```js
 await queueA.add("do-thing", { thingId, reason });
@@ -137,6 +136,5 @@ The port above is an example. It must differ from the API port and from the fron
 | Logging | `createLogger("worker:domain")`; log failures in the `"failed"` handler |
 | Errors | Let BullMQ retry on throw |
 | Concurrency | Per worker, by I/O profile (for example 5 for I/O-heavy, 1 for sweeps) |
-| Idempotency | Every job is safe to retry: idempotent DB operations (`writing-database-code`) |
-| Imports | Workers never import from the server package |
+| Idempotency | Every job is safe to retry (`building-backends`) |
 | Delayed jobs | `job.moveToDelayed(timestamp, token)` then `throw new DelayedError()` |

@@ -1,5 +1,7 @@
 # HTTP, validation, auth and errors
 
+Rules (two-layer validation, error codes, auth flow, permission model, response shapes): `building-backends`. This file holds the Elysia code.
+
 ## Routes, services, schemas
 
 ```js
@@ -30,7 +32,7 @@ export async function createThing(userId, data) {
 
 The schema example is in the next section.
 
-## Validation: two layers
+## Validation: TypeBox
 
 Layer 1, the schema (route level): TypeBox checks shape, types and basic constraints. Failures reach the error handler as `VALIDATION`. Elysia's own default status for a failed validation is 422; this skill's handler maps it to 400 on purpose, so the API has one client-error status. Keep that mapping unless the project says otherwise.
 
@@ -46,18 +48,7 @@ export const CreateThingBody = t.Object({
 });
 ```
 
-Layer 2, the service: rules a schema cannot express.
-
-| Concern | Layer |
-|---------|-------|
-| Type, shape, required fields, format, length, enums | Schema |
-| Existence and uniqueness | Service |
-| State validity (already cancelled, not active) | Service |
-| Cross-field rules (end after start) | Service |
-| Authorization context (another user's resource) | Service |
-| External checks | Service |
-
-Never repeat a schema rule in the service. Check uniqueness in the service for a friendly answer; unique-index rules are in `writing-database-code`.
+Layer 2, the service, is covered in `building-backends`.
 
 ## Errors
 
@@ -73,8 +64,6 @@ export function BadRequest(message, errorCode, data) { return new HttpError(400,
 
 Call them without `new`: `throw Conflict("Request conflicts", "THING_CONFLICT")`.
 
-Errors that leave the server are generic and driven by `errorCode` (`securing-applications`). The `error` text is a fixed generic phrase, the client picks its message from `errorCode`, and no error reveals whether an account or record exists. Internals (SQL text, stack, constraint names, provider payloads) go to the log only.
-
 ### Global handler
 
 Register `.onError()` on the root app and `.error({ HttpError })` so the class is known. Handle:
@@ -82,20 +71,14 @@ Register `.onError()` on the root app and `.error({ HttpError })` so the class i
 - `VALIDATION` and `PARSE`: 400.
 - `NOT_FOUND`: 404.
 - `HttpError`: its own status.
-- Postgres errors: `23505` and `23503` map to 409, `23502` (NOT NULL violation) to 500, because it is a server bug, not client input. The body stays generic: never forward the driver message or constraint name.
+- Postgres errors: `23505` and `23503` map to 409, `23502` to 500 (mapping rule: `building-backends`).
 - Anything else: 500 with a generic body.
 
-Every error body has the same shape:
-
-```js
-{ error, errorCode?, requestId, ts, ...data? }
-```
-
-Keep `data` free of internals and of anything the caller sent.
+The body shape is in `building-backends`.
 
 ## Auth and guards
 
-Default pattern: global resolve plus per-route guards. Change the mechanism or permission model only when the project already uses another.
+Default pattern: global resolve plus per-route guards. Change the mechanism only when the project already uses another.
 
 ### Global resolve plus per-route guards
 
@@ -134,16 +117,9 @@ export function requirePermission(domain, flag) {
 )
 ```
 
-### Bitmask RBAC (default permission model)
+### Permission check
 
-Use it when an app needs roles beyond "logged in": per-domain bitmasks checked in code, O(1), no DB read per request.
-
-- Split the product into permission domains (content, users, billing, settings, whatever exists). One integer bitmask per domain.
-- Cap a domain at 31 flags so the mask stays a signed 32-bit integer and ports across languages (JS bitwise ops, Java `int`, Postgres `integer`). A domain that outgrows 31 flags splits in two.
-- Name flags ENTITY_ACTION (`BILLING_VIEW`, `CONTENT_CREATE`), never ACTION_ENTITY, so sorted output groups by resource.
-- Tier flags per capability: `X_VIEW` (read) < `X_CREATE` (mutate) < `X_MANAGE` (elevated). A role gets the lowest tier that suffices.
-- `ROLE_PERMISSIONS` maps `roleId` to `{ DOMAIN: mask }` and is frozen. The super-admin role has every bit in every domain.
-- Refuse any change that would leave no holder of the top role, and say why.
+Model and rules: `building-backends` (`references/permissions.md`).
 
 ```js
 export const CON = Object.freeze({
@@ -158,21 +134,13 @@ export function canDo(roleId, domain, flag) {
 }
 ```
 
-Enforcement is dual: backend guards are the security boundary. The frontend imports the same flag and role constants from the shared package only to hide UI and shape messages. Change both sides together.
-
 ### Global context
 
-`.derive({ as: "global" }, ...)` injects per-request context such as `requestId`. Use the client IP only for security log lines, never as a rate-limit key.
+`.derive({ as: "global" }, ...)` injects per-request context such as `requestId`.
 
 ## Response shapes
 
-| Pattern | Shape |
-|---------|-------|
-| Single resource | `{ entity: data }` |
-| List | `{ entities: [...], total, page, limit }` |
-| Creation | `status(201, { entity: data })` |
-| Simple action | `{ success: true, message: "..." }` |
-| Error | `{ error, errorCode?, requestId, ts }` |
+Contract: `building-backends`. Creation uses `status(201, { entity: data })`.
 
 ## App assembly
 

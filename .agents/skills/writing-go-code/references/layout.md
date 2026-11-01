@@ -15,8 +15,7 @@ These are defaults for a new project. An existing repo's choices win. Every libr
 Package design:
 
 - Group by domain noun (`internal/order`, `internal/invoice`), each owning its types, logic and the small store interface it needs. Adapters (HTTP, Postgres) either inside the domain package when small or in dependency-named packages (`internal/server`, `internal/store`). Pick one and be consistent.
-- Dependencies point inward: server and store depend on domain packages, never the reverse.
-- When packages of one layer import each other, or an import cycle appears, define the interface in the consumer or move the shared piece into a helper package both import, named for a real noun (never `types` or `common`). Enforce the direction with a guard (depguard, an import-rule Go test).
+- Dependency direction and shared helpers: `building-backends`. In Go, break an import cycle by defining the interface in the consumer or moving the shared piece into a package named for a real noun (never `types` or `common`). Enforce the direction with depguard or an import-rule Go test.
 - Small sharp packages (`internal/reqctx`, `internal/build`, `internal/config`) instead of one `util`.
 
 Reference tree for a CLI plus server plus web UI:
@@ -45,7 +44,7 @@ web/                      Vue app; embed.go and noui.go; dist/.gitkeep committed
 
 Default: cobra with pflag, no viper. This is the GitHub CLI pattern.
 
-One parser per flag kind: every command that takes the flag uses it (see `building-backends`).
+One parser per flag kind (`building-backends`).
 
 Per command:
 

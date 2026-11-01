@@ -5,6 +5,8 @@ description: "Conventions for JavaScript backends on Bun with Elysia: routes, se
 
 # Elysia Server
 
+Backend rules for any language: `building-backends`. This skill adds the Elysia mechanics.
+
 ## Runtime and tooling
 
 Bun is the runtime and package manager. Do not use `npm`, `pnpm`, `yarn` or `node` for project commands.
@@ -30,7 +32,7 @@ bun run fmt
 
 Open a reference only when the task touches its topic.
 
-- `references/http.md`: route, service and schema examples, validation split, error factories and the error handler, auth guards, bitmask RBAC, response shapes, app assembly.
+- `references/http.md`: route, service and schema examples, TypeBox usage, error factories and the Elysia error handler, auth resolve and guards, permission check code, app assembly.
 - `references/workers.md`: BullMQ queues, worker processes, retries, the scheduler, the email worker.
 - `references/redis.md`: only when the project has Redis/Valkey: key prefixes, cache, semaphores, rate-limit counters, emailed links.
 - `references/payments.md`: only for payment providers: adapters, webhooks, reconciliation.
@@ -41,7 +43,7 @@ Other skills own these topics. Do not restate them here.
 - `writing-database-code`: queries, transactions, status codes, unique indexes, idempotency, ids, mappers.
 - `securing-applications`: auth, audit, what a log line may carry, rate-limit keys, generic errors, emailed links, uploads.
 - `writing-tests`: test levels and style.
-- `building-backends`: layers, where shared code goes, one owner per rule.
+- `building-backends`: layers, validation split, errors and error codes, auth flow, bitmask permissions, response shapes, package layout, queues and jobs, injection, one owner per rule.
 
 ## Architecture layers
 
@@ -55,12 +57,7 @@ Routes (.routes.js) -> Services (.service.js) -> Shared queries (.queries.js) ->
 
 ## Package layout
 
-Check which processes the project runs before placing code. Never carry paths over from another project.
-
-- Server only: everything stays in the server package, including the DB client and `db/queries/`.
-- Server plus workers (any second server-side process): move the DB client, query files and queue definitions into a server-side common package both import. One query function, two consumers.
-- Constants and enums shared with the frontend get their own package. No server code (DB, queues, secrets) in it.
-- Dependencies point one way: shared constants, then server common, then server and workers. Workers never import from the server package.
+Rules: `building-backends`. In this stack the server-side common package holds the DB client, `db/queries/` and queue definitions, and the constants package is the one the frontend imports.
 
 ## Feature module
 
@@ -82,9 +79,8 @@ Code examples: `references/http.md`.
 - Return creations as `status(201, { entity })`. Destructure `user`, `body`, `query`, `params` and `status` from the handler context.
 - Ids that are bigint travel as strings in JSON (see `writing-database-code`).
 - Services are plain exported async functions, no classes. Private helpers stay unexported.
-- Business validation and orchestration live in services, DB operations come from query files. Throw error factories (without `new`) for validation and business rules.
-- Dispatch side effects through queues, never from routes.
-- TypeBox covers structure only: shape, type, basic constraints. Apply it with `{ body }`, `{ query }` or `{ params }`. Never re-check in a service what a schema enforces.
+- DB operations come from query files. Throw error factories (without `new`) for validation and business rules.
+- Apply TypeBox with `{ body }`, `{ query }` or `{ params }`.
 
 ## Quick reference
 
@@ -102,7 +98,7 @@ Code examples: `references/http.md`.
 ## Common mistakes
 
 - DB queries or business logic in route handlers.
-- Business validation in schemas, or schema rules repeated in services.
+- Business rules in schemas, or schema rules repeated in services.
 - `new` with error factories.
 - Queue jobs dispatched from routes.
 - Native `Date` instead of Luxon.

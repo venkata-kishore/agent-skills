@@ -37,12 +37,12 @@ Message discipline:
 - Context first, `%w` last: `fmt.Errorf("open config: %w", err)`. Printed text then reads outermost to innermost. Exception: a category sentinel may lead, `fmt.Errorf("%w: invalid header", ErrBadRequest)`.
 - No "failed to" or "error" filler. Not `"failed to open file: %w"`. Just `"open config: %w"`.
 - Do not repeat what the inner error already says. `os.Open` errors include the path.
-- Handle once. Return it or log it. Logging at every layer gives duplicate lines; log where the error is finally mapped to a response or exit code.
+- Handle each error once (`building-backends`): log where it is finally mapped to a response or exit code, not at every layer.
 - Go 1.27 vet flags `fmt.Errorf("...: %w", p)` where `p` is `*E` but only `E` implements `error`. Fix the receiver kind; otherwise `Is`/`As` miss it.
 
 ## HTTP handlers
 
-Handlers return errors; one adapter maps them to responses and logs once.
+Handlers return errors; one adapter maps them to responses and logs once (status and error-code rules: `building-backends`).
 
 ```go
 type handlerFunc func(w http.ResponseWriter, r *http.Request) error
@@ -70,7 +70,7 @@ func (fn handlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-- Map domain errors to status in one place. Errors that leave the server are generic: never send internal error text, and never put secrets, tokens or raw identifiers in the log line (`securing-applications`).
+- Never put secrets, tokens or raw identifiers in the log line (`securing-applications`).
 - Always use `r.Context()` downstream. Never `context.Background()` in a handler.
 - Go 1.25+ has `http.CrossOriginProtection` for CSRF via Fetch metadata.
 
