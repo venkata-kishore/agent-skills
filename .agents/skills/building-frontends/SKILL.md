@@ -30,7 +30,6 @@ Open the framework file for the project's stack. Open the others when you touch 
 
 - One responsibility per unit. If you need "and" to describe it, split it.
 - Separate UI, business logic, data access and side effects. Stores own data, pages own loading and error UI. Compose small units; no class hierarchies.
-- Remove duplication at the third occurrence, not the first.
 - Build the simplest thing for today's requirement; ask the user before building for a likely future need.
 - Pure by default; push I/O, DOM and network to the edges (stores, composables, effects).
 - No magic numbers: use the shared constants package.
@@ -45,6 +44,17 @@ Decide by what the code does, not its length. Split when a unit:
 - takes 3 or more positional parameters (pass an options object; no boolean flags like `doThing(true, false)`);
 - cannot be named cleanly, or a block needs a comment saying what it does (extract it);
 - is hard to test in isolation.
+
+## Reuse
+
+- UI markup repeated a third time becomes a component in `components/<domain>/` (or `components/` when shared across domains). Extract earlier when the copies carry a rule.
+- Anything that carries a rule (validation, a permission check, a request body, which actions an item offers) gets one owner the second time it is needed. Copies drift: one validates a number, the other sends null.
+- Stateful or reactive logic goes in a composable or hook (`useXxx`). Pure logic goes in a plain function in `lib/`. Components keep only rendering and wiring.
+- A form or workflow reachable from more than one entry point (an inline bar and a keyboard prompt) shares one composable or hook for its state, validation and request body.
+- A multi-call API sequence (start, then complete) lives in one store action or function.
+- Busy and error state for user actions goes through the project's one action composable or hook. It clears the previous error when the action retries.
+- Derive lists from one source: buttons, menus and badges read the same table of actions or statuses instead of keeping their own copy.
+- To catch copy-paste, propose `jscpd` in the local gate (a new dependency, so it needs the user's approval). It cannot see one rule written in different shapes; look for those in review.
 
 ## Quality
 
@@ -88,10 +98,6 @@ frontend/
 - Every per-user store resets when the signed-in user changes (sign-out, user switch, token loss). Cross-store resets are allowed (auth resets the others).
 - An action that writes state after an `await` first checks the signed-in user did not change while it waited; if it did, drop the result.
 - Every list or detail view handles loading, error and empty states as three different states. A failed fetch is an error state with a retry, never an empty list.
-
-- A form or workflow reachable from more than one entry point (an inline bar and a keyboard prompt) shares one composable or hook for its state, validation and request body. A multi-call API sequence (start, then complete) lives in one function.
-- Busy and error state for user actions goes through the project's one action composable or hook. It clears the previous error when the action retries.
-- To catch copy-paste, propose `jscpd` in the local gate (a new dependency, so it needs the user's approval).
 
 ## Errors
 

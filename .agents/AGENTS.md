@@ -67,11 +67,7 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 
 - No code comments that restate the code. Details: the `writing-code-comments` skill.
 - Mechanical bulk rewrites touch only the lines they must. Do not reorder unrelated lines.
-- One owner per rule. The second time a predicate, policy or check is needed (who may override, which status a refusal gets, a cap), extract it into the layer that owns it and call it; never re-derive it inline. Copies drift into bugs.
-- When a domain type has a validate or guard method, the code path calls it. A validator only tests call is a defect.
-- One shape per concept: a filter or parameter set used in several places is one shared struct or builder, and a summary mapper builds on the full one (or the reverse), so a new field reaches both.
-- Clone detectors catch copy-paste, not one rule written in different shapes. Look for those in every review.
-- When packages of one layer import each other, move the shared piece into a helper package both import, never one importing the other. Enforce it with a guard.
+- One owner per rule: never re-derive a check, policy, form or mapping that already exists; extract it the second time it is needed. Where shared code goes: the `structuring-backend-code` and `building-frontends` skills.
 
 # Testing
 

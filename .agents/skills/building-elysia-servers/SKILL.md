@@ -41,6 +41,7 @@ Other skills own these topics. Do not restate them here.
 - `writing-database-code`: queries, transactions, status codes, unique indexes, idempotency, ids, mappers.
 - `securing-applications`: auth, audit, what a log line may carry, rate-limit keys, generic errors, emailed links, uploads.
 - `writing-tests`: test levels and style.
+- `structuring-backend-code`: layers, where shared code goes, one owner per rule.
 
 ## Architecture layers
 

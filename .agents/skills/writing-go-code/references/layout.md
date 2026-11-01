@@ -45,7 +45,7 @@ web/                      Vue app; embed.go and noui.go; dist/.gitkeep committed
 
 Default: cobra with pflag, no viper. This is the GitHub CLI pattern.
 
-One parser per flag kind (an assignee, a role, a reference): every command that takes that flag uses it, so a value one command accepts (`--assignee me`) every command accepts, and a required value is rejected the same way everywhere.
+One parser per flag kind: every command that takes the flag uses it (see `structuring-backend-code`).
 
 Per command:
 
