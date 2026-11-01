@@ -67,7 +67,7 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 
 - No code comments that restate the code. Details: the `writing-code-comments` skill.
 - Mechanical bulk rewrites touch only the lines they must. Do not reorder unrelated lines.
-- One owner per rule: never re-derive a check, policy, form or mapping that already exists; extract it the second time it is needed. Where shared code goes: the `structuring-backend-code` and `building-frontends` skills.
+- One owner per rule: never re-derive a check, policy, form or mapping that already exists; extract it the second time it is needed. Where shared code goes: the `building-backends` and `building-frontends` skills.
 
 # Testing
 

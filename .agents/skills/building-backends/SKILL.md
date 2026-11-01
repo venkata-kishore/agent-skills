@@ -1,5 +1,5 @@
 ---
-name: structuring-backend-code
+name: building-backends
 description: 'Sets where backend code lives and how each rule gets exactly one owner, in any language (Go, Rust, Java, Kotlin, TypeScript, Python): layers, domain rules and validators, shared packages, wire types, mappers, filters, input parsers and duplication. Use when writing, reviewing or refactoring backend services, handlers, domain logic, repository or store code, API types or CLIs, when a check or policy appears in more than one place, or when deciding where shared code goes.'
 ---
 

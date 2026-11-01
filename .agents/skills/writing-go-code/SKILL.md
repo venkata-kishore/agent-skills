@@ -61,7 +61,7 @@ Security, data and dependencies:
 - Copy slices and maps at API boundaries. Returning an internal slice leaks aliasing.
 - Dependencies: latest stable, verified against the registry, pinned. Every new dependency needs the user's approval and a check that the standard library does not already cover it.
 
-Sibling skills (follow them, do not restate): `structuring-backend-code` (layers, shared code, one owner per rule), `writing-tests`, `writing-database-code`, `securing-applications`.
+Sibling skills (follow them, do not restate): `building-backends` (layers, shared code, one owner per rule), `writing-tests`, `writing-database-code`, `securing-applications`.
 
 ## References
 
