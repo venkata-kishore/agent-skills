@@ -89,6 +89,10 @@ frontend/
 - An action that writes state after an `await` first checks the signed-in user did not change while it waited; if it did, drop the result.
 - Every list or detail view handles loading, error and empty states as three different states. A failed fetch is an error state with a retry, never an empty list.
 
+- A form or workflow reachable from more than one entry point (an inline bar and a keyboard prompt) shares one composable or hook for its state, validation and request body. A multi-call API sequence (start, then complete) lives in one function.
+- Busy and error state for user actions goes through the project's one action composable or hook. It clears the previous error when the action retries.
+- To catch copy-paste, propose `jscpd` in the local gate (a new dependency, so it needs the user's approval).
+
 ## Errors
 
 - The UI chooses its message from the server's `errorCode`, through one pure helper (`messageForError(err)`), with a generic fallback for unknown codes. Never match message text and never show the raw body, `err.message` or a stack trace.

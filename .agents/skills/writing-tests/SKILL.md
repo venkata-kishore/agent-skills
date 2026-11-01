@@ -24,6 +24,7 @@ description: "Sets test discipline: scope and levels, fixtures, hand-written fak
 
 ## Output, time and assertions
 
+- When a type on one side of a boundary mirrors an enum or constant on the other (a wire type and its domain enum, a client constant copied from the server), add a test that pins the two equal.
 - Test output is pristine: a warning in the output is a finding. A test that triggers a log line on purpose captures and asserts it. Never lower the root log level to hide it.
 - Time comes from an injected clock, never the wall clock. Assert on recorded events (for example, that a timer-started event appears in the workflow history) rather than elapsed time, which drifts under time-skipping servers.
 - Two timers with the same budget race: when a library's request timeout and your own deadline are equal, either error can surface. Make the test assert one fixed message for every timeout path, and give the two timers different budgets.

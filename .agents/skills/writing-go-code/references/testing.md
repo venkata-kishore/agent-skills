@@ -84,7 +84,7 @@ The guides disagree. Google bans assertion libraries; most of industry uses test
 ## Static analysis
 
 - `go vet ./...` always. Key analyzers: `copylock`, `lostcancel`, `printf`, `loopclosure`, `tests`, `waitgroup` (1.25), `hostport` (1.25), `stdversion`.
-- `staticcheck ./...` or golangci-lint v2. v2 config shape: `version: "2"`, `linters.default: standard`, `linters.enable: [...]`, separate `formatters.enable: [gofmt, goimports]`. The v1 `enable-all`/`disable-all` keys are gone.
+- `staticcheck ./...` or golangci-lint v2. v2 config shape: `version: "2"`, `linters.default: standard`, `linters.enable: [...]` (include `dupl` to catch copy-paste), separate `formatters.enable: [gofmt, goimports]`. The v1 `enable-all`/`disable-all` keys are gone.
 - Small strict set that good repos converge on: `errcheck`, `govet`, `staticcheck`, `revive`, `errname`, `sloglint`, `testifylint` (if testify), `modernize`, `depguard` banning `github.com/pkg/errors`, `io/ioutil`, `math/rand` for secrets.
 - `//nolint:<linter> // reason`. Never a bare `//nolint`.
 - `go fix -diff ./...` to preview, `go fix ./...` to apply modernizers (1.26+). Run from a clean tree, then run again to catch cascades.

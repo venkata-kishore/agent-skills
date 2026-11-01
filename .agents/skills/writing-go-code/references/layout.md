@@ -14,7 +14,7 @@ These are defaults for a new project. An existing repo's choices win. Every libr
 
 Package design:
 
-- Group by domain noun (`internal/card`, `internal/doc`), each owning its types, logic and the small store interface it needs. Adapters (HTTP, Postgres) either inside the domain package when small or in dependency-named packages (`internal/server`, `internal/store`). Pick one and be consistent.
+- Group by domain noun (`internal/order`, `internal/invoice`), each owning its types, logic and the small store interface it needs. Adapters (HTTP, Postgres) either inside the domain package when small or in dependency-named packages (`internal/server`, `internal/store`). Pick one and be consistent.
 - Dependencies point inward: server and store depend on domain packages, never the reverse.
 - When packages of one layer import each other, or an import cycle appears, define the interface in the consumer or move the shared piece into a helper package both import, named for a real noun (never `types` or `common`). Enforce the direction with a guard (depguard, an import-rule Go test).
 - Small sharp packages (`internal/reqctx`, `internal/build`, `internal/config`) instead of one `util`.
@@ -45,6 +45,8 @@ web/                      Vue app; embed.go and noui.go; dist/.gitkeep committed
 
 Default: cobra with pflag, no viper. This is the GitHub CLI pattern.
 
+One parser per flag kind (an assignee, a role, a reference): every command that takes that flag uses it, so a value one command accepts (`--assignee me`) every command accepts, and a required value is rejected the same way everywhere.
+
 Per command:
 
 ```go
@@ -59,7 +61,7 @@ func NewCmdList(f *cmdutil.Factory, runF func(*ListOptions) error) *cobra.Comman
 	opts := &ListOptions{IO: f.IOStreams, Client: f.Client}
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List cards in the current project",
+		Short: "List orders in the current project",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if runF != nil {
 				return runF(opts)
@@ -67,8 +69,8 @@ func NewCmdList(f *cmdutil.Factory, runF func(*ListOptions) error) *cobra.Comman
 			return listRun(cmd.Context(), opts)
 		},
 	}
-	cmd.Flags().IntVarP(&opts.Limit, "limit", "L", 10, "Maximum number of cards")
-	cmdutil.AddJSONFlags(cmd, &opts.Exporter, cardFields)
+	cmd.Flags().IntVarP(&opts.Limit, "limit", "L", 10, "Maximum number of orders")
+	cmdutil.AddJSONFlags(cmd, &opts.Exporter, orderFields)
 	return cmd
 }
 ```
@@ -88,7 +90,7 @@ Alternatives if the repo already uses them: kong (struct-tag CLIs, used by gum),
 
 Default: stdlib `net/http` with 1.22+ patterns. Add chi only if sub-router mounting becomes painful. Avoid gin and fiber (own context types; fiber is not net/http).
 
-- Routes: `mux.HandleFunc("GET /api/cards/{id}", h.getCard)`. `r.PathValue("id")`. `{$}` anchors an exact match. Conflicting patterns panic at registration. 405 with `Allow` is automatic.
+- Routes: `mux.HandleFunc("GET /api/orders/{id}", h.getOrder)`. `r.PathValue("id")`. `{$}` anchors an exact match. Conflicting patterns panic at registration. 405 with `Allow` is automatic.
 - Middleware is `func(http.Handler) http.Handler`. Compose with a tiny chain helper. Needed set: request ID, access log via slog, body size limit, timeout, CORS for the dashboard, auth, client IP from trusted proxies only.
 - Handlers return `error`; one adapter maps to status and logs once (see `errors.md`).
 - Request-scoped values (request ID, principal, tenant) via one `reqctx` package with typed accessors. Everything else injected through constructors.

@@ -21,7 +21,7 @@
 | Yes | dynamic | custom type `type ValidationError struct{...}` with `Error()` |
 
 - Sentinels are named `ErrX`. Types are named `XError`.
-- Expose an identifiable condition by wrapping a sentinel: `fmt.Errorf("card %d: %w", id, ErrNotFound)`. If a function documents that it returns a sentinel, always wrap it, never return it bare, so callers must use `errors.Is` and you can add context later.
+- Expose an identifiable condition by wrapping a sentinel: `fmt.Errorf("order %d: %w", id, ErrNotFound)`. If a function documents that it returns a sentinel, always wrap it, never return it bare, so callers must use `errors.Is` and you can add context later.
 - Behaviour interfaces (`interface{ Timeout() bool }`, like `net.Error`) let callers distinguish transient from permanent without knowing concrete types.
 
 ## Wrap, hide, or pass through
