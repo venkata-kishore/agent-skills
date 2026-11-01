@@ -52,7 +52,7 @@ Check-then-insert is not safe alone: two concurrent transactions can both see no
 
 Anything that runs outside a web request (jobs, workflows, queues, object keys, exports, log lines) carries the tenant id with every entity id. Never encode a location (shard, region, database) in an id. Worker ids are unique across every running instance.
 
-Tenancy without row-level security: one scoped data-access gateway, and every mutation writes exactly one audit row in the same transaction.
+Tenancy without row-level security: one scoped data-access gateway runs every transaction, and every mutation writes exactly one audit row in the same transaction. A "no change" result is a typed signal: the gateway commits nothing and writes no audit row.
 
 ## Row status values
 
@@ -84,4 +84,6 @@ Determine the mode first (migrations directory, ORM config, package scripts): to
 
 - One transaction does not make two reads agree under read-committed isolation (each statement has its own snapshot). When you need "stored but unreadable" versus "absent", get both from one statement.
 - A "write only if changed" helper must not return null: the write has committed by then, so null turns a committed change into a server error. Return the row or a result object.
+- Document one global lock order (for example account row, then entity row `FOR UPDATE`, then user row `FOR SHARE`) and follow it everywhere. Never open a second connection while holding a lock; read settings and other reference data before locking.
+- No savepoints. A batch that must survive one bad row retries the failed page one row per transaction.
 - Keep transactions short and database-only; no external calls inside (see `securing-applications` for outbound timeouts).

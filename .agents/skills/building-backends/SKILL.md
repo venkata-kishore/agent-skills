@@ -1,11 +1,11 @@
 ---
 name: building-backends
-description: 'Sets the rules for backend code in any language (Go, TypeScript, Rust, Java, Kotlin, Python): layers, one owner per rule, validation, typed errors with stable error codes, auth, permissions (bitmask RBAC), response shapes, package layout, queues and jobs, dependency injection and duplication. Points to the language skills `writing-go-code` and `building-elysia-servers`, and to `writing-database-code`, `securing-applications` and `writing-tests`. Use when writing, reviewing or refactoring a backend, server, API, service, handler, route or endpoint, or when validation, errors, error codes, permissions, RBAC, roles, jobs, queues, workers, package layout, duplication or a refactor comes up.'
+description: 'Sets the rules for backend code in any language (Go, TypeScript, Rust, Java, Kotlin, Python): layers, one owner per rule, validation, typed errors with stable error codes, auth, permissions (bitmask RBAC), response shapes, package layout, queues and jobs, dependency injection and duplication. Points to the language skills `writing-go-code`, `writing-java-code` and `building-elysia-servers`, and to `writing-database-code`, `securing-applications` and `writing-tests`. Use when writing, reviewing or refactoring a backend, server, API, service, handler, route or endpoint, or when validation, errors, error codes, permissions, RBAC, roles, jobs, queues, workers, package layout, duplication or a refactor comes up.'
 ---
 
 # Building backends
 
-These rules hold in every language. The stack skills add mechanics only: `writing-go-code`, `building-elysia-servers`. Other skills own their topics: `writing-database-code` (queries, transactions, idempotent writes), `securing-applications` (auth hardening, audit, generic errors, rate limits, uploads), `writing-tests`.
+These rules hold in every language. The stack skills add mechanics only: `writing-go-code`, `writing-java-code`, `building-elysia-servers`. Other skills own their topics: `writing-database-code` (queries, transactions, idempotent writes), `securing-applications` (auth hardening, audit, generic errors, rate limits, uploads), `writing-tests`.
 
 ## References
 
@@ -19,6 +19,8 @@ These rules hold in every language. The stack skills add mechanics only: `writin
 - Adapters: HTTP or RPC handlers, the store or repository, external clients. They map input and output, call the service, and add transport detail (status code, hint). No business rules.
 - Dependencies point inward: adapters import the service and domain; the domain imports neither.
 - Dependencies are injected through constructors or parameters. No mutable global state. The entry point only reads config, wires and starts.
+- Every environment read goes through one config reader. Process-wide singletons (id generator, connection pool) are built once in the entry point and injected; a second instance in a test or in wiring collides.
+- The core carries no transport context: no error variants that differ only by which route threw them.
 
 ## One owner per rule
 
@@ -34,6 +36,8 @@ These rules hold in every language. The stack skills add mechanics only: `writin
 - Handle each error once: return it or log it, not both. Log where it is finally mapped to a response or exit code.
 - Resolve identity once per request, then guard per route or group (authenticated, then permission). The server is the security boundary; the client only hides UI.
 - Roles beyond "logged in" use the bitmask model in `references/permissions.md`.
+- Every route declares its required permission as data, and a test walks all registered routes against an expected-permissions table, so a route without auth cannot slip in.
+- PATCH bodies distinguish three states per field: absent leaves the value, `null` clears it, a value sets it.
 
 ## Responses
 
@@ -51,6 +55,7 @@ Check which processes the project runs before placing code. Never carry paths ov
 ## Queues and jobs
 
 - Side effects (email, notifications, payment follow-ups, anything slow or external) are enqueued from the service, never from a handler.
+- Durable workflows: changing a signal signature, the first commands, timers or waits breaks replay of runs already in flight. Keep committed replay fixtures and re-record them only for a change made safe.
 - Every job is safe to retry. Use idempotent writes (`writing-database-code`). Jobs with an external effect retry with backoff; idempotent sweeps and scheduled jobs run once and the next run is the retry.
 
 ## Where shared code goes
@@ -66,6 +71,10 @@ Check which processes the project runs before placing code. Never carry paths ov
 - A step repeated across handlers (emit an event, release a lock, create a link) is one function they call.
 - A query fragment that must match an index exactly (a full-text expression) is one function.
 - One parser per input kind (a CLI flag value, a query parameter). Every command or route that takes it uses it, so a value one accepts, all accept, and a missing required value is rejected the same way everywhere.
+
+## Refactoring
+
+A refactor keeps observable behaviour: status codes, `errorCode`s, response key order, log levels, lock order and audit rows. Compare old and new side by side before calling it done.
 
 ## Finding duplication
 

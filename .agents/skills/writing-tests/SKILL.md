@@ -16,7 +16,8 @@ description: "Sets test discipline: scope and levels, fixtures, hand-written fak
 
 ## Fakes and fixtures
 
-- Write fakes by hand. Do not use a mocking library.
+- Write fakes by hand. Do not use a mocking library. When a port gains a method, update its fakes in the same change.
+- Shape tests pin the exact body (key order and nulls) of key routes. When a response gains a key, update its shape test in the same change.
 - Drive the real production path through one shared fixture. A test-local copy of the path drifts silently (a private "submit" helper can drop production steps).
 - A test that calls an internal seam directly does not pin the production wiring: revert the call site and it still passes. Drive the real path with a fake transport that fails deterministically.
 - A test that deliberately creates data that breaks a database-wide invariant check (for example a row with no parent) deletes that data when it finishes, so later checks do not fail.
@@ -43,6 +44,7 @@ description: "Sets test discipline: scope and levels, fixtures, hand-written fak
 - A change to a shared fixture (base class, seed helper, race helper) means the whole module's tests, not only the edited classes: every caller depends on it.
 - Never pipe a gate's exit code away. Redirect output to a file and print `EXIT=$?` explicitly. Gate on the command's own exit code.
 - Test runs that share a machine follow the project's lock rule.
+- The build fails on any test that prints to stdout or stderr, and on any skipped test outside a small allowlist: an assumption-skip on a missing tool otherwise reads green.
 
 For layering or cycle guard scripts and their tests, read `references/structural-guards.md`.
 
