@@ -1,6 +1,6 @@
 ---
 name: delegating-to-codex
-description: "For coding agents other than Codex. Delegate work to OpenAI Codex CLI: implementation workers (gpt-6.1-sol, high effort) in parallel git worktrees when the work splits, then review, integrate and verify the result; reviews and brainstorms (gpt-6-astra, high effort) read-only against the repo. Use only when the user explicitly asks in chat to use Codex, e.g. "use codex for X" or "have codex do X". Never on your own initiative."
+description: 'For coding agents other than Codex. Delegate work to OpenAI Codex CLI: implementation workers (gpt-6.1-sol, high effort) in parallel git worktrees when the work splits, then review, integrate and verify the result; reviews and brainstorms (gpt-6-astra, high effort) read-only against the repo. Use only when the user explicitly asks in chat to use Codex, e.g. "use codex for X" or "have codex do X". Never on your own initiative.'
 compatibility: Not for Codex itself; disable it there with a [[skills.config]] entry (enabled = false) in ~/.codex/config.toml. Needs a shell, git, jq and a logged-in Codex CLI. Sends repository content to OpenAI.
 metadata:
   verified-with: "codex-cli 0.166.0, git 2.52.0"
