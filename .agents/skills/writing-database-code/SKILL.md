@@ -12,7 +12,7 @@ Data-layer rules for any SQL database; PostgreSQL is assumed where it matters.
 - `references/drizzle.md`: open when the project uses Drizzle ORM (query builder, relations v2, client wiring, transactions, atomic claims, key rules).
 - `references/raw-sql.md`: open when the Drizzle builder cannot express a query (CTEs, window functions, dynamic filters, JSONB merge) or when hand-writing SQL.
 - `references/migrations.md`: open when adding or changing a migration or schema file.
-- `references/ids-and-constants.md`: open when generating ids, defining shared constants or status objects, or writing DB-to-API mappers.
+- `references/ids-and-constants.md`: open when generating ids or touching the id generator, defining shared constants or status objects, or writing DB-to-API mappers.
 - `references/postgres.md`: open when creating a PostgreSQL database or cluster, choosing collation, or reasoning about transaction isolation.
 
 ## Organization
@@ -72,7 +72,7 @@ Range checks work directly: `status > 3` is live, `status < 0` is removable, `OR
 ## Constants, ids, mappers
 
 - Constants live in a shared package imported by backend and frontend. Never hardcode magic numbers.
-- Choose ids by scale: snowflake-style `bigint` for high-traffic tables, identity columns for small reference tables. Pre-generate ids when several tables in one transaction must reference them.
+- Ids are snowflake-style `bigint`, not UUIDs: 41 bits of milliseconds since a fixed custom epoch, then 22 low bits from a central counter (Redis, else a Postgres sequence) mod 2^22, or a worker id (leased or configured) and a local counter; one mode per deployment. Combine with OR. One generator per process, injected. Identity columns only for small reference tables. Pre-generate ids when several tables in one transaction must reference them.
 - Mappers are named `mapXToY`, return `null` for null input, and keep hashes and internal flags out of responses.
 - Examples and detail: `references/ids-and-constants.md`.
 
