@@ -58,6 +58,7 @@ export const env = Object.freeze({
 - `required(key, fallback)` uses the fallback only when the variable is absent.
 - Freeze the export. Group variables by concern: server, database, redis, auth, external services.
 - Coerce numbers inline: `Number(process.env.PORT) || default`.
+- The fallback ports here and in the worker health check suit scaffolding only. A real project sets `PORT`, `FRONTEND_URL` and `WORKER_HEALTH_PORT` to its own 88xx block (`~/.agents/instructions/environment.md`).
 - Workers have their own `config/env.js` with worker-specific variables.
 
 ## Outbound calls
