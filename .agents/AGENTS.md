@@ -61,7 +61,7 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 - Latest stable versions only, verified against the package registry (not search results, which can be stale), pinned exactly. Record any exception and its reason.
 - Open-source dependencies only, licence checked. Every new dependency needs my approval; first check whether the standard library or an existing dependency already does the job.
 - No hosted CI: every quality gate runs locally. How to run gates and read their results: the `writing-tests` skill.
-- Before setting up, resetting or building dev resources (databases, containers, images, tools), read `~/.agents/instructions/environment.md`.
+- Before setting up, resetting or building dev resources (databases, containers, images, tools, host ports), read `~/.agents/instructions/environment.md`.
 - Before designing a feature, a setting or a default, read `~/.agents/instructions/product.md`.
 
 # Code
