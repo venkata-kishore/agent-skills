@@ -50,7 +50,7 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 # Git
 
 - Work on a branch off the main branch. Commit each task when it is done.
-- Push after a sensible chunk of committed work, not after every commit. Pull requests, force pushes and remote branch changes need my go each time.
+- Push after a sensible chunk of committed work, not after every commit. Pull requests, force pushes and other remote branch changes need my go each time; deleting a merged branch does not.
 - Merges into the main branch are squash merges. Merges between other branches are normal merge commits (`--no-ff`), never a rebase, squash or cherry-pick.
 - Commit with an explicit pathspec so a shared index cannot leak someone else's staged files into your commit.
 - Commit messages carry no self-attribution trailers.
@@ -59,10 +59,12 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 # Dependencies, environment and product
 
 - Latest stable versions only, verified against the package registry (not search results, which can be stale), pinned exactly. Record any exception and its reason.
+- Test only on the latest stable version of every library, database and server the project supports. An older version counts as supported without a test run of its own when every feature the code uses exists and works the same there; the docs then say "tested on X, works on Y and later".
 - Open-source dependencies only, licence checked. Every new dependency needs my approval; first check whether the standard library or an existing dependency already does the job.
 - No hosted CI: every quality gate runs locally. How to run gates and read their results: the `writing-tests` skill.
 - Before setting up, resetting or building dev resources (databases, containers, images, tools, host ports), read `~/.agents/instructions/environment.md`.
 - Before designing a feature, a setting or a default, read `~/.agents/instructions/product.md`.
+- Open-source documentation is neatly organized, polished and easy to read: plain language, a table wherever things are compared or listed, a diagram wherever a flow, a lifecycle or a structure can be shown, and a long file split into focused pages with one owner per fact.
 
 # Code
 
