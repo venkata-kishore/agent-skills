@@ -73,7 +73,7 @@ and what is blocked, and compare with the handoff.
 3. Run the repo's line-width or format check on every edited record file.
 4. Commit record changes with the code they describe.
 5. Push after a sensible chunk of committed work. Force pushes, PRs and remote branch changes
-   still need the user's go per action.
+   other than deleting a merged branch still need the user's go per action.
 
 ## Other situations
 - Sub-project or long-running branch ends: open `references/closeout.md`.

@@ -66,9 +66,11 @@ sessions in this repo, never sessions from other projects.
   the final review.
 
 ## Clean-up
-- Delete only local branches, and only after `git branch --contains` shows them merged. Branches
-  that were cherry-picked or amended never show as merged: a content comparison is evidence, but
-  force-deleting them or force-removing worktrees with untracked files needs the user's go.
-- Never delete remote branches. Report stale ones to the user.
+- Delete merged branches, local and remote. After a normal merge `git branch --contains` lists
+  the branch. A squash-merged branch never shows as merged: it counts as merged when its PR is
+  merged and its tip is the PR's merged head. Cherry-picked or amended branches never show as
+  merged either: a content comparison is evidence, but force-deleting them needs the user's go.
+  So does deleting another developer's branch or one with commits after its merge, and
+  force-removing a worktree with untracked files.
 - Push policy is in the SKILL.md end-of-session list. Everything else outward-facing still needs
   a go per action.
