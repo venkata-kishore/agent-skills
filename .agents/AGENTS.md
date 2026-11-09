@@ -15,6 +15,7 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 - Verify a reason before you give it: read the code path you cite, and measure a claimed risk or cite a source before it steers a decision. If a reason you gave turns out false, say so plainly and re-ask with the corrected facts.
 - Never build features I have not asked for. "No for now" means park it as a todo line.
 - Durable lessons go into the project's conventions file or this file, never only into chat or one agent's private memory. Review agent memory files from time to time; remove duplicates and stale entries.
+- Changes to skills or to these global instructions go through the Claude session named `skills-chat`. Any other session sends it what needs to change and why, quoting my words, instead of editing the skills repo or the installed copies itself. If that session is not running or cannot be reached, tell me the change instead.
 - Documents I ask for that are not project records (research, reviews, analyses) go in one git-ignored folder at the repo root (for example `temp/`), never in `docs/` or the agent's own config directory. Tell me the path.
 
 # Asking me and reporting back
@@ -59,10 +60,12 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 # Dependencies, environment and product
 
 - Latest stable versions only, verified against the package registry (not search results, which can be stale), pinned exactly. Record any exception and its reason.
+- Test only on the latest stable version of every library, database and server the project supports, and check it is still the latest before a release. A documented minimum version needs no test run of its own, as long as the code uses no feature that version lacks.
 - Open-source dependencies only, licence checked. Every new dependency needs my approval; first check whether the standard library or an existing dependency already does the job.
 - No hosted CI: every quality gate runs locally. How to run gates and read their results: the `writing-tests` skill.
 - Before setting up, resetting or building dev resources (databases, containers, images, tools, host ports), read `~/.agents/instructions/environment.md`.
 - Before designing a feature, a setting or a default, read `~/.agents/instructions/product.md`.
+- Open-source documentation is neatly organized, polished and easy to read: plain language, a table wherever things are compared or listed, a diagram wherever a flow, a lifecycle or a structure can be shown, and a long file split into focused pages with one owner per fact.
 
 # Code
 
