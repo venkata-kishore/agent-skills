@@ -15,7 +15,6 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 - Verify a reason before you give it: read the code path you cite, and measure a claimed risk or cite a source before it steers a decision. If a reason you gave turns out false, say so plainly and re-ask with the corrected facts.
 - Never build features I have not asked for. "No for now" means park it as a todo line.
 - Durable lessons go into the project's conventions file or this file, never only into chat or one agent's private memory. Review agent memory files from time to time; remove duplicates and stale entries.
-- Changes to skills or to these global instructions go through the Claude session named `skills-chat`. Any other session sends it what needs to change and why, quoting my words, instead of editing the skills repo or the installed copies itself. If that session is not running or cannot be reached, tell me the change instead.
 - Documents I ask for that are not project records (research, reviews, analyses) go in one git-ignored folder at the repo root (for example `temp/`), never in `docs/` or the agent's own config directory. Tell me the path.
 
 # Asking me and reporting back
@@ -51,7 +50,7 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 # Git
 
 - Work on a branch off the main branch. Commit each task when it is done.
-- Push after a sensible chunk of committed work, not after every commit. Pull requests, force pushes and remote branch changes need my go each time.
+- Push after a sensible chunk of committed work, not after every commit. Pull requests, force pushes and other remote branch changes need my go each time; deleting a merged branch does not.
 - Merges into the main branch are squash merges. Merges between other branches are normal merge commits (`--no-ff`), never a rebase, squash or cherry-pick.
 - Commit with an explicit pathspec so a shared index cannot leak someone else's staged files into your commit.
 - Commit messages carry no self-attribution trailers.
@@ -60,7 +59,7 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 # Dependencies, environment and product
 
 - Latest stable versions only, verified against the package registry (not search results, which can be stale), pinned exactly. Record any exception and its reason.
-- Test only on the latest stable version of every library, database and server the project supports, and check it is still the latest before a release. A documented minimum version needs no test run of its own, as long as the code uses no feature that version lacks.
+- Test only on the latest stable version of every library, database and server the project supports. An older version counts as supported without a test run of its own when every feature the code uses exists and works the same there; the docs then say "tested on X, works on Y and later".
 - Open-source dependencies only, licence checked. Every new dependency needs my approval; first check whether the standard library or an existing dependency already does the job.
 - No hosted CI: every quality gate runs locally. How to run gates and read their results: the `writing-tests` skill.
 - Before setting up, resetting or building dev resources (databases, containers, images, tools, host ports), read `~/.agents/instructions/environment.md`.
