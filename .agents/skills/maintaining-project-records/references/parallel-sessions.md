@@ -31,6 +31,10 @@ sessions in this repo, never sessions from other projects.
 - A cross-stream dependency is relayed once; then the two workers talk directly.
 - A worker reports: done, in flight, blockers or user questions, files touched.
 - Stop a helper whose background work outlived its report, and do the remaining step yourself.
+- Before telling the user a session is offline or paused, list the live sessions again. An
+  earlier check goes stale, and a session missing from one listing can be back in the next.
+- After a pause, send each worker its own "resume" with its next step. Never assume a broadcast
+  reached a session.
 
 ## Claims
 - Before editing, a worker tells the lead which paths it will touch. The lead checks overlap and
@@ -54,7 +58,10 @@ sessions in this repo, never sessions from other projects.
 - Bring in a helper's or another branch's commits with a normal merge commit, never a
   cherry-pick: under a "merge commits only" rule a cherry-pick is a rebase in effect.
 - Before a stream's branch merges, the stream merges the latest integration branch into itself
-  and gates there, so semantic conflicts surface on its own branch.
+  and gates there, so semantic conflicts surface on its own branch. It commits its own work
+  first: git refuses the merge while an uncommitted file is also changed on the integration
+  branch. A red gate after the merge is fixed in a follow-up commit before the branch merges
+  anywhere.
 - The lead merges in rounds and gates each round. Nothing merges while a gate is reading the
   working tree. If a batch gate is still waiting for the lock when another branch becomes ready,
   stop the gate, merge, and gate once.
