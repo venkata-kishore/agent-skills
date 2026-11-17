@@ -84,6 +84,7 @@ Determine the mode first (migrations directory, ORM config, package scripts): to
 
 - One transaction does not make two reads agree under read-committed isolation (each statement has its own snapshot). When you need "stored but unreadable" versus "absent", get both from one statement.
 - A "write only if changed" helper must not return null: the write has committed by then, so null turns a committed change into a server error. Return the row or a result object.
+- A write-back built from an earlier read sets only the columns it changes and repeats the state it relied on in its `WHERE` (`AND status = <value read>`). Zero rows means the row changed underneath: treat it as gone. A full-row save from an unlocked read undoes a concurrent soft delete or status change, and an upsert re-creates a hard-deleted row. Take `SELECT ... FOR UPDATE` and re-check only when the decision spans several statements.
 - Document one global lock order (for example account row, then entity row `FOR UPDATE`, then user row `FOR SHARE`) and follow it everywhere. Never open a second connection while holding a lock; read settings and other reference data before locking.
 - No savepoints. A batch that must survive one bad row retries the failed page one row per transaction.
 - Keep transactions short and database-only; no external calls inside (see `securing-applications` for outbound timeouts).
