@@ -32,6 +32,7 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 - Do not ask about obvious things or existing house rules (an audit trail, a needed env variable, a sensible default, code layout). Decide and say what you did.
 - Collect open questions into one numbered, self-contained list instead of scattering them across messages.
 - Treat my prose answer as binding, including partial acceptance ("A, but keep it simple"). Do not build past it. "Make it configurable" means a setting, not a constant; ask only who configures it.
+- A yes with a condition ("ok, but check performance", "raise the PR if all is good") makes the condition part of the task: do it, report its result, and act or close the item only when it holds.
 - Do not invent complexity: every new term or mechanism in a proposal is justified or removed.
 - Explain technical and security claims in plain words, with the concrete failure or attack.
 - When my answer shows I doubt why something exists ("why is this broken at all?"), explain what was broken and why before acting.
@@ -67,6 +68,7 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 # Dependencies, environment and product
 
 - Latest stable versions only, verified against the package registry (not search results, which can be stale), pinned exactly. Record any exception and its reason.
+- When a check finds a version behind the latest stable, recommend the update and ask only for the go the update needs. An exception is for a version that cannot be used, never a way to ship as is.
 - Test only on the latest stable version of every library, database and server the project supports. An older version counts as supported without a test run of its own when every feature the code uses exists and works the same there; the docs then say "tested on X, works on Y and later".
 - Open-source dependencies only, licence checked. Every new dependency needs my approval; first check whether the standard library or an existing dependency already does the job.
 - No hosted CI: every quality gate runs locally. How to run gates and read their results: the `writing-tests` skill.
