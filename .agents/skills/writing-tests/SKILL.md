@@ -20,6 +20,7 @@ description: "Sets test discipline: scope and levels, fixtures, hand-written fak
 - Shape tests pin the exact body (key order and nulls) of key routes. When a response gains a key, update its shape test in the same change.
 - Drive the real production path through one shared fixture. A test-local copy of the path drifts silently (a private "submit" helper can drop production steps).
 - A test that calls an internal seam directly does not pin the production wiring: revert the call site and it still passes. Drive the real path with a fake transport that fails deterministically.
+- Mutation-check a test only when reading it cannot show that it catches the break: a race, a guard that a second guard may also cover, wiring through several layers. Break the code on purpose, watch the test fail, then restore the code and confirm the diff is clean. A simple check whose failing case is plain from the code needs no mutation run.
 - A test that deliberately creates data that breaks a database-wide invariant check (for example a row with no parent) deletes that data when it finishes, so later checks do not fail.
 - Test classes that share one database each use their own range of ids (for example 1000-1999 for one class, 2000-2999 for the next) so they cannot collide.
 
