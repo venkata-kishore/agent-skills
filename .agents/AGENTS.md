@@ -11,6 +11,7 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 - Keep projects separate. Never mention one project in another project's commits, PR descriptions, docs or code. Context about consumers or related repos is for reasoning only.
 - Terse prompts about work already in progress ("ok what now?", "continue", "check with X") mean: check the current state, report, and carry on. Do not ask for clarification first. A new task that is unclear still gets a question.
 - After an interruption, resume exactly where work stopped. Check which background jobs are still running before restarting any.
+- Never sit idle while work I asked for is ready: when a task is done, start the next ready one at once. Whatever waits on me becomes a written question that blocks only its own task.
 - When a tool refuses a compound command, none of it ran. Re-run the parts separately and check the state.
 - Verify a reason before you give it: read the code path you cite, and measure a claimed risk or cite a source before it steers a decision. If a reason you gave turns out false, say so plainly and re-ask with the corrected facts.
 - Never build features I have not asked for. "No for now" means park it as a todo line.
@@ -21,6 +22,7 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 
 - When anything is unclear, ask. Never assume or fill gaps just to get the work done; that produces bad output.
 - Never bring a bare question. Every question or decision point comes with researched options, a recommended one, the alternatives, and why each is or is not the right choice. Do the analysis first; the question is the last line, not the first.
+- Options include the standard capability a user would expect to solve the problem, not only narrow repairs. Example: for an account stuck in a bad state, account deletion belongs on the list beside the fixes.
 - Make every question self-contained: what the thing is, what it does today, why it matters, with a concrete example. Long sessions scroll out of view, so restate the context instead of pointing back.
 - Never use internal ids ("R5", "Q3", "item 4") as the only name for something. Say what it is each time.
 - No filler cons, ever. Every con names a concrete consequence (a failure mode, a security or data risk, a behaviour difference, an operational burden, a real user-facing cost). "Needs more code, tests or effort" is never a con. If an option has no real con, write "none of substance". Never manufacture balance.
@@ -30,6 +32,7 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 - Do not ask about obvious things or existing house rules (an audit trail, a needed env variable, a sensible default, code layout). Decide and say what you did.
 - Collect open questions into one numbered, self-contained list instead of scattering them across messages.
 - Treat my prose answer as binding, including partial acceptance ("A, but keep it simple"). Do not build past it. "Make it configurable" means a setting, not a constant; ask only who configures it.
+- A yes with a condition ("ok, but check performance", "raise the PR if all is good") makes the condition part of the task: do it, report its result, and act or close the item only when it holds.
 - Do not invent complexity: every new term or mechanism in a proposal is justified or removed.
 - Explain technical and security claims in plain words, with the concrete failure or attack.
 - When my answer shows I doubt why something exists ("why is this broken at all?"), explain what was broken and why before acting.
@@ -54,7 +57,7 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 - Merges into the main branch are squash merges. Merges between other branches are normal merge commits (`--no-ff`), never a rebase, squash or cherry-pick.
 - Commit with an explicit pathspec so a shared index cannot leak someone else's staged files into your commit.
 - Commit messages carry no self-attribution trailers.
-- Before git work beyond commit, push and merge (judging where branches stand, deleting branches, setting changes aside, restoring files), read `~/.agents/instructions/git.md`.
+- Before git work beyond commit, push and merge (judging where branches stand, deleting branches, setting changes aside, restoring files, preparing a release), read `~/.agents/instructions/git.md`.
 
 # Commit messages and PR descriptions
 
@@ -65,6 +68,7 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 # Dependencies, environment and product
 
 - Latest stable versions only, verified against the package registry (not search results, which can be stale), pinned exactly. Record any exception and its reason.
+- When a check finds a version behind the latest stable, recommend the update and ask only for the go the update needs. An exception is for a version that cannot be used, never a way to ship as is.
 - Test only on the latest stable version of every library, database and server the project supports. An older version counts as supported without a test run of its own when every feature the code uses exists and works the same there; the docs then say "tested on X, works on Y and later".
 - Open-source dependencies only, licence checked. Every new dependency needs my approval; first check whether the standard library or an existing dependency already does the job.
 - No hosted CI: every quality gate runs locally. How to run gates and read their results: the `writing-tests` skill.
@@ -87,3 +91,4 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 - Delegate read-only research (codebase exploration, file search, doc lookups) to a helper agent on a fast, cheap model.
 - Run routine implementation helpers on a mid-tier model. Keep architectural decisions, security reviews and subtle debugging on the strongest model.
 - Use helpers whenever a task has parallel workstreams, needs coverage across many files, or has distinct phases (discover, then transform, then verify).
+- Run independent parts (a browser check, a review, docs) on helpers at the same time, not one after another in the main session. The main session keeps integration and judgement.

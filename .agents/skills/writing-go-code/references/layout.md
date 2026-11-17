@@ -9,6 +9,7 @@ These are defaults for a new project. An existing repo's choices win. Every libr
 - `internal/` for all application code. The compiler blocks outside imports, so you can refactor freely.
 - No `pkg/`. The official layout guide never mentions it and most of the ecosystem does not use it. If something must be importable by other modules, split it into its own module when that consumer actually exists.
 - Non-Go directories at the root: `web/`, `docs/`, `deploy/`, `scripts/`, `skills/`.
+- Throwaway Go code inside the module (a one-off tool, an experiment) goes in a directory whose name starts with `_`, such as `_scratch/`. `./...` skips such directories, so lint, vet and tests leave it alone; run it by its own path (`go run ./_scratch/tool`). A git-ignored folder under any other name is still matched by `./...`.
 - Never commit `go.work`. It solves nothing for a Node frontend next to a Go module, shadows a developer's own workspace and makes CI test the wrong versions. If a second Go module appears, keep `go.work` gitignored.
 - Never commit a local-path `replace`.
 

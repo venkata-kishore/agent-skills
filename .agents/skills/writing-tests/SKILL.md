@@ -20,6 +20,7 @@ description: "Sets test discipline: scope and levels, fixtures, hand-written fak
 - Shape tests pin the exact body (key order and nulls) of key routes. When a response gains a key, update its shape test in the same change.
 - Drive the real production path through one shared fixture. A test-local copy of the path drifts silently (a private "submit" helper can drop production steps).
 - A test that calls an internal seam directly does not pin the production wiring: revert the call site and it still passes. Drive the real path with a fake transport that fails deterministically.
+- Mutation-check a test only when reading it cannot show that it catches the break: a race, a guard that a second guard may also cover, wiring through several layers. Break the code on purpose, watch the test fail, then restore the code and confirm the diff is clean. A simple check whose failing case is plain from the code needs no mutation run.
 - A test that deliberately creates data that breaks a database-wide invariant check (for example a row with no parent) deletes that data when it finishes, so later checks do not fail.
 - Test classes that share one database each use their own range of ids (for example 1000-1999 for one class, 2000-2999 for the next) so they cannot collide.
 
@@ -40,9 +41,12 @@ description: "Sets test discipline: scope and levels, fixtures, hand-written fak
 
 ## Running tests
 
-- After a targeted run, check that the result files list the classes you meant. A test-name filter that matches nothing passes silently.
+- A run is red or green only on its own evidence: the command's own exit code and the result files it wrote. Without both it did not finish: say so and run it once more. The usual ways the evidence gets lost:
+  - After a targeted run, check that the result files list the classes you meant. A test-name filter that matches nothing passes silently.
+  - Never pipe a gate's exit code away. Redirect output to a file and print `EXIT=$?` explicitly. Gate on the command's own exit code. A pipe reports its last command, also inside `bash -c '...'` and inside an `&&` chain: `build | tail -5; echo EXIT=$?` prints `EXIT=0` for a failed build.
+  - An exit code above 128 with no result files means the run was killed from outside (143 is SIGTERM, 137 is SIGKILL). That is not a test failure.
 - A change to a shared fixture (base class, seed helper, race helper) means the whole module's tests, not only the edited classes: every caller depends on it.
-- Never pipe a gate's exit code away. Redirect output to a file and print `EXIT=$?` explicitly. Gate on the command's own exit code.
+- When one change turns many tests red at once (a newly required header, a stricter parser), find the shared cause before fixing tests one by one: run the whole module once for the full red list, then fix the shared test client or helper first.
 - Test runs that share a machine follow the project's lock rule.
 - The build fails on any test that prints to stdout or stderr, and on any skipped test outside a small allowlist: an assumption-skip on a missing tool otherwise reads green.
 

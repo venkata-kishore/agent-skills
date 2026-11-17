@@ -49,6 +49,9 @@ docs/plans/            plans for active work only
 A question entry holds: what it is and what happens today, a recommendation with its reason,
 alternatives with why and why not. No filler cons.
 
+Record a user answer in the user's own words or a close paraphrase. Anything a worker adds
+beyond it is labelled as the worker's note, so nobody later reads it as the user's decision.
+
 Before reporting a review finding, check todo and questions. Before planning from a tracked list
 of problems, recompute it from the code; records drift.
 

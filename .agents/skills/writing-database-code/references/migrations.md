@@ -11,5 +11,6 @@ Determine the mode first (migrations directory, ORM config, package scripts).
 
 - Write idempotent DDL (`IF NOT EXISTS` / `IF EXISTS`, guarded seed inserts). Seed data lives in its own numbered migration.
 - Pre-production, migrations carry schema only, never data fixes. A column drop or rename happens through a rebaseline the user decides; dev databases are recreated afterwards.
+- Once a product is released, keep every migration safe to re-run wherever that is possible. A change that cannot be (a drop, a rename, a data rewrite) is allowed: mark the file as breaking and ship it with a major version.
 - Keep one golden copy of the complete current schema (tables and indexes only) beside the migrations. Update it in the same commit as every migration and add a drift check.
 - Manual mode: apply with a fail-fast flag (`psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f ...`, since plain `psql -f` exits 0 on failed statements). DDL runs as the table owner; the runtime role gets DML grants only. Confirm destructive changes with the user.
