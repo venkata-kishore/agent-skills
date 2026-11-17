@@ -56,7 +56,7 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 - Merges into the main branch are squash merges. Merges between other branches are normal merge commits (`--no-ff`), never a rebase, squash or cherry-pick.
 - Commit with an explicit pathspec so a shared index cannot leak someone else's staged files into your commit.
 - Commit messages carry no self-attribution trailers.
-- Before git work beyond commit, push and merge (judging where branches stand, deleting branches, setting changes aside, restoring files), read `~/.agents/instructions/git.md`.
+- Before git work beyond commit, push and merge (judging where branches stand, deleting branches, setting changes aside, restoring files, preparing a release), read `~/.agents/instructions/git.md`.
 
 # Commit messages and PR descriptions
 
