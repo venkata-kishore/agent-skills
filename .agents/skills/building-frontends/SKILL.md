@@ -88,7 +88,12 @@ frontend/
 - Contrast checks use the exact palette step each role renders with, per mode. Recompute them when a theme redraws only some steps.
 - Base elements in `@layer base`; recurring elements get one `@layer components` class.
 - Defer frontend-wide passes such as dark mode until enough UI exists, then do one pass.
+- Design files that a design tool generated for the project (for example `DESIGN.md` and its token JSON) are living records of the design. Every design change updates them in the same change, so the files and the UI never drift apart.
 - Setup and examples: `references/tailwind.md`.
+
+## Lists and tables
+
+- A list table keeps one row height. Long text stays on one line, cut with an ellipsis, with the full text in `title`. A chip, avatar or button never makes a row taller than the others.
 
 ## Data and state
 
