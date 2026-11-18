@@ -54,16 +54,18 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 
 - Work on a branch off the main branch. Commit each task when it is done.
 - Push after a sensible chunk of committed work, not after every commit. Pull requests, force pushes and other remote branch changes need my go each time; deleting a merged branch does not.
+- My go for a PR or a merge covers the commits I saw. When commits are added afterwards, tell me what changed and get a new go before merging or asking me to merge.
 - Merges into the main branch are squash merges. Merges between other branches are normal merge commits (`--no-ff`), never a rebase, squash or cherry-pick.
 - Commit with an explicit pathspec so a shared index cannot leak someone else's staged files into your commit.
 - Commit messages carry no self-attribution trailers.
 - Before git work beyond commit, push and merge (judging where branches stand, deleting branches, setting changes aside, restoring files, preparing a release), read `~/.agents/instructions/git.md`.
 
-# Commit messages and PR descriptions
+# Reviews, commit messages and PR descriptions
 
 - Say what the change does, why it is needed when that is not obvious, and how it was checked. Nothing else belongs: no release counts, registry or CI quotas, schedules, other work in progress, or notes about the session. Report those to me in chat.
 - Text that a squash merge turns into the commit message is permanent history on the main branch. Write it to that standard.
-- Before writing or editing a commit message, a PR title or a PR description, use the `writing-commit-messages` skill: what stays out, titles that trigger a release, getting the text through the shell intact.
+- Before opening a PR that changes code, a helper with a fresh context reviews the diff, and every finding is fixed or closed with a reason. A PR that changes only docs or other text needs no review.
+- Before reviewing a change, answering review findings, or writing or editing a commit message, a PR title or a PR description, use the `preparing-changes-for-merge` skill: how findings are reported, the cap on review rounds, what stays out of the text, titles that trigger a release, getting the text through the shell intact.
 
 # Dependencies, environment and product
 

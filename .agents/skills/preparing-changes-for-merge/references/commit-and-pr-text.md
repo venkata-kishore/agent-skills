@@ -1,9 +1,6 @@
----
-name: writing-commit-messages
-description: "Guides writing, editing and reviewing commit messages, PR titles and PR descriptions: what belongs in them, what stays out, titles and keywords that trigger automation, text that becomes permanent history through a squash merge, and getting the text through the shell intact. Use before every git commit, gh pr create or gh pr edit, when amending or rewording a message, when a PR's scope changes after it was opened, or when reviewing a commit message or PR description."
----
-
 # Commit messages and PR descriptions
+
+Open before writing or editing a commit message, a PR title or a PR description.
 
 **Scope.** Commit subjects and bodies, PR titles and descriptions, and later edits to either.
 
@@ -22,6 +19,8 @@ report for the user: say it in chat.
   what was skipped and what was not tested.
 - **What a reviewer or upgrader must know:** a behaviour change, a breaking change, a new
   dependency, a new secret or environment variable, a config change, a migration step.
+- **How to undo it**, when a plain revert is not enough: a migration that must be reversed, data
+  that was rewritten, a flag or setting that must be switched back.
 
 Text and diff match: mention every change of that kind, and describe nothing the diff does not
 contain.
