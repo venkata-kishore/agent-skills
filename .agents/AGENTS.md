@@ -59,11 +59,12 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 - Commit messages carry no self-attribution trailers.
 - Before git work beyond commit, push and merge (judging where branches stand, deleting branches, setting changes aside, restoring files, preparing a release), read `~/.agents/instructions/git.md`.
 
-# Commit messages and PR descriptions
+# Reviews, commit messages and PR descriptions
 
 - Say what the change does, why it is needed when that is not obvious, and how it was checked. Nothing else belongs: no release counts, registry or CI quotas, schedules, other work in progress, or notes about the session. Report those to me in chat.
 - Text that a squash merge turns into the commit message is permanent history on the main branch. Write it to that standard.
-- Before writing or editing a commit message, a PR title or a PR description, use the `preparing-changes-for-merge` skill: what stays out, titles that trigger a release, getting the text through the shell intact.
+- Before opening a PR that changes code, a helper with a fresh context reviews the diff, and every finding is fixed or closed with a reason. A PR that changes only docs or other text needs no review.
+- Before reviewing a change, answering review findings, or writing or editing a commit message, a PR title or a PR description, use the `preparing-changes-for-merge` skill: how findings are reported, the cap on review rounds, what stays out of the text, titles that trigger a release, getting the text through the shell intact.
 
 # Dependencies, environment and product
 
