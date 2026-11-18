@@ -19,6 +19,8 @@ report for the user: say it in chat.
   what was skipped and what was not tested.
 - **What a reviewer or upgrader must know:** a behaviour change, a breaking change, a new
   dependency, a new secret or environment variable, a config change, a migration step.
+- **How to undo it**, when a plain revert is not enough: a migration that must be reversed, data
+  that was rewritten, a flag or setting that must be switched back.
 
 Text and diff match: mention every change of that kind, and describe nothing the diff does not
 contain.
