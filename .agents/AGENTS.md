@@ -54,6 +54,7 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 
 - Work on a branch off the main branch. Commit each task when it is done.
 - Push after a sensible chunk of committed work, not after every commit. Pull requests, force pushes and other remote branch changes need my go each time; deleting a merged branch does not.
+- My go for a PR or a merge covers the commits I saw. When commits are added afterwards, tell me what changed and get a new go before merging or asking me to merge.
 - Merges into the main branch are squash merges. Merges between other branches are normal merge commits (`--no-ff`), never a rebase, squash or cherry-pick.
 - Commit with an explicit pathspec so a shared index cannot leak someone else's staged files into your commit.
 - Commit messages carry no self-attribution trailers.
