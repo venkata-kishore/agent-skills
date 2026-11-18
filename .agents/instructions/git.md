@@ -14,5 +14,5 @@ Read on demand, when `~/.agents/AGENTS.md` points here.
 - Check every pinned version against the registry and update what is behind.
 - Check the names, routes, metrics and defaults the docs state against the code.
 - Run the full gates on the release commit itself, not on an earlier one.
-- Write the PR title and description with the `writing-commit-messages` skill: a title can be what starts the release.
+- Write the PR title and description with the `preparing-changes-for-merge` skill: a title can be what starts the release.
 - Open the release PR only on my go.

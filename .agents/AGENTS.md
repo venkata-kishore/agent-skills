@@ -63,7 +63,7 @@ Global defaults for how the agent works. Project-specific rules live in each pro
 
 - Say what the change does, why it is needed when that is not obvious, and how it was checked. Nothing else belongs: no release counts, registry or CI quotas, schedules, other work in progress, or notes about the session. Report those to me in chat.
 - Text that a squash merge turns into the commit message is permanent history on the main branch. Write it to that standard.
-- Before writing or editing a commit message, a PR title or a PR description, use the `writing-commit-messages` skill: what stays out, titles that trigger a release, getting the text through the shell intact.
+- Before writing or editing a commit message, a PR title or a PR description, use the `preparing-changes-for-merge` skill: what stays out, titles that trigger a release, getting the text through the shell intact.
 
 # Dependencies, environment and product
 
